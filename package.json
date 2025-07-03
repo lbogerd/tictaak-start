@@ -8,7 +8,7 @@
     "build": "vite build",
     "serve": "vite preview",
     "test": "vitest run",
-    "fix": "pnpm exec biome lint --write --unsafe",
+		"fix": "pnpm exec biome lint --write --unsafe && pnpm exec biome format --write",
     "comp:add": "pnpm dlx shadcn@latest add"
   },
   "dependencies": {
