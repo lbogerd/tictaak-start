@@ -1,6 +1,9 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
+  // still needs to be in the node_modules folder
+  // as otherwise it will complain about 'exports not defined'
+  // https://github.com/prisma/prisma/discussions/21561
+  output   = "../node_modules/@prisma-app/client"
 }
 
 datasource db {

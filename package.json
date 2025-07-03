@@ -13,6 +13,7 @@
     "check": "biome check"
   },
   "dependencies": {
+    "@prisma/client": "6.11.1",
     "@t3-oss/env-core": "0.13.8",
     "@tailwindcss/vite": "4.1.11",
     "@tanstack/react-router": "1.124.0",
