@@ -19,7 +19,7 @@ code {
 }
 
 :root {
-	--background: oklch(1 0 0);
+	--background: var(--color-yellow-50);
 	--foreground: oklch(0.141 0.005 285.823);
 	--card: oklch(1 0 0);
 	--card-foreground: oklch(0.141 0.005 285.823);
@@ -133,6 +133,20 @@ code {
 		@apply border-border outline-ring/50;
 	}
 	body {
-		@apply bg-background text-foreground;
+		@apply bg-transparent text-foreground;
 	}
+}
+
+/* Background gradient to make the overscroll apply the gradient */
+/* does not work with safari */
+html::before {
+	content: "";
+	position: fixed; /* sticks to the viewport */
+	inset: 0; /* full width & height */
+	z-index: -1; /* sits behind everything */
+	background: linear-gradient(
+		var(--color-yellow-50) 0%,
+		var(--color-orange-50) 50%,
+		var(--color-red-50) 100%
+	);
 }

@@ -1,8 +1,8 @@
 import {
-	Outlet,
-	HeadContent,
-	Scripts,
 	createRootRoute,
+	HeadContent,
+	Outlet,
+	Scripts,
 } from "@tanstack/react-router"
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools"
 
@@ -21,7 +21,15 @@ export const Route = createRootRoute({
 				content: "width=device-width, initial-scale=1",
 			},
 			{
-				title: "TanStack Start Starter",
+				title: "TicTaak",
+			},
+			{
+				name: "description",
+				content: "Print your todos as physical tickets",
+			},
+			{
+				name: "theme-color",
+				content: "oklch(0.577 0.245 27.325)",
 			},
 		],
 		links: [
@@ -44,11 +52,11 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
 	return (
-		<html lang="en">
+		<html lang="en" className="bg-yellow-50">
 			<head>
 				<HeadContent />
 			</head>
-			<body>
+			<body className="bg-gradient-to-b from-yellow-50 via-orange-50 to-red-50">
 				{children}
 				<Scripts />
 			</body>
