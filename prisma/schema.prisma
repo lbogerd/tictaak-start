@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model categories {
+  id        String   @id
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  tasks     tasks[]
+}
+
+model tasks {
+  id                String     @id
+  title             String
+  categoryId        String
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime
+  isRecurring       Boolean    @default(false)
+  recurringType     String?
+  recurringInterval Int?       @default(1)
+  recurringDays     String?
+  lastPrintedAt     DateTime?
+  nextPrintDate     DateTime?
+  isActive          Boolean    @default(true)
+  categories        categories @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+}
