@@ -8,9 +8,8 @@
     "build": "vite build",
     "serve": "vite preview",
     "test": "vitest run",
-    "format": "biome format",
-    "lint": "biome lint",
-    "check": "biome check"
+    "fix": "pnpm exec biome lint --write --unsafe",
+    "comp:add": "pnpm dlx shadcn@latest add"
   },
   "dependencies": {
     "@prisma/client": "6.11.1",
