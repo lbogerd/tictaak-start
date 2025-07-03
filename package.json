@@ -5,11 +5,12 @@
 	"scripts": {
 		"dev": "vite dev --port 3000",
 		"start": "node .output/server/index.mjs",
-		"build": "vite build",
+		"build": "pnpm run db:gen && vite build",
 		"serve": "vite preview",
 		"test": "vitest run",
 		"fix": "pnpm exec biome lint --write --unsafe && pnpm exec biome format --write",
-		"comp:add": "pnpm dlx shadcn@latest add"
+		"comp:add": "pnpm dlx shadcn@latest add",
+		"db:gen": "pnpm exec prisma generate"
 	},
 	"dependencies": {
 		"@prisma/client": "6.11.1",
