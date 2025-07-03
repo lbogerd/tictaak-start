@@ -29,7 +29,8 @@ export const Route = createRootRoute({
 			},
 			{
 				name: "theme-color",
-				content: "oklch(0.577 0.245 27.325)",
+				// yellow-50
+				content: "oklch(98.7% 0.026 102.212)",
 			},
 		],
 		links: [
