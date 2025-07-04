@@ -32,3 +32,8 @@
 - chore: release 2
 - chore: update package version to 1
 - style: adjust card and background colors for improved theme consistency
+
+## 8 (2025-07-04)
+
+- fix: remove npm version from package.json
+- chore: release 7
