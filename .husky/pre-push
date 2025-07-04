@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+. "$(dirname "$0")/_/husky.sh"
+
+# $1 = remote name, $2 = remote URL (passed through to prepush.ts)
+node --experimental-strip-types scripts/prepush.ts "$1" "$2"
