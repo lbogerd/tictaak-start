@@ -54,3 +54,7 @@
 - chore: release 2
 - chore: update package version to 1
 - style: adjust card and background colors for improved theme consistency
+
+## 10 (2025-07-04)
+
+- chore: release 9
