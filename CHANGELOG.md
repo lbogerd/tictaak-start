@@ -10,3 +10,7 @@
 ## 4 (2025-07-04)
 
 - chore: update changelog with dates
+
+## 5 (2025-07-04)
+
+- chore: enhance pre-push script for version bumping and changelog updates
