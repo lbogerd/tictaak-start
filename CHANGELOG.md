@@ -58,3 +58,5 @@
 ## 10 (2025-07-04)
 
 - chore: release 9
+## v11 – 2025-07-04T14:43:55.209Z
+- fix: use husky for git hooks and update prepush script to prevent unintentional reruns
