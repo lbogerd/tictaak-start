@@ -14,3 +14,7 @@
 ## 5 (2025-07-04)
 
 - chore: enhance pre-push script for version bumping and changelog updates
+
+## 6 (2025-07-04)
+
+- chore: update package.json to specify node, npm, and pnpm engine requirements
