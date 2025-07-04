@@ -21,7 +21,7 @@ code {
 :root {
 	--background: var(--color-yellow-50);
 	--foreground: oklch(0.141 0.005 285.823);
-	--card: oklch(1 0 0);
+	--card: oklch(1 0 0 / 0.8);
 	--card-foreground: oklch(0.141 0.005 285.823);
 	--popover: oklch(1 0 0);
 	--popover-foreground: oklch(0.141 0.005 285.823);
@@ -55,9 +55,9 @@ code {
 }
 
 .dark {
-	--background: oklch(0.141 0.005 285.823);
+	--background: var(--color-yellow-900);
 	--foreground: oklch(0.985 0 0);
-	--card: oklch(0.141 0.005 285.823);
+	--card: var(--color-yellow-900) / 0.8;
 	--card-foreground: oklch(0.985 0 0);
 	--popover: oklch(0.141 0.005 285.823);
 	--popover-foreground: oklch(0.985 0 0);
