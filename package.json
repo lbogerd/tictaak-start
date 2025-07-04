@@ -2,7 +2,7 @@
   "name": "tictaak-start",
   "private": true,
   "type": "module",
-  "version": "2",
+  "version": "3",
   "scripts": {
     "dev": "vite dev --port 3000",
     "start": "node .output/server/index.mjs",
