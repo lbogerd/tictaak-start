@@ -54,7 +54,7 @@ await fs.writeJson(pkgPath, pkg, { spaces: 2 })
 
 /* ---------- 4.  Update CHANGELOG.md ---------- */
 
-const heading = `\n## ${next}\n\n ${new Date().toISOString().split("T")[0]}\n`
+const heading = `\n## ${next} (${new Date().toISOString().split("T")[0]})\n\n`
 const bullets = `${messages.map((m) => `- ${m}`).join("\n")}\n`
 await fs.appendFile("CHANGELOG.md", heading + bullets)
 
