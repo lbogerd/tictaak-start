@@ -2,7 +2,7 @@
   "name": "tictaak-start",
   "private": true,
   "type": "module",
-  "version": "8",
+  "version": "9",
   "engines": {
     "node": ">=24",
     "pnpm": ">=10"
