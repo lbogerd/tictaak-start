@@ -5,9 +5,8 @@ import {
 	Scripts,
 } from "@tanstack/react-router"
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools"
-
+import Version from "~/components/Version"
 import Header from "../components/Header"
-
 import appCss from "../styles.css?url"
 
 export const Route = createRootRoute({
@@ -60,6 +59,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			<body className="bg-gradient-to-b from-yellow-50 via-orange-50 to-red-50">
 				{children}
 				<Scripts />
+
+				<Version />
 			</body>
 		</html>
 	)
