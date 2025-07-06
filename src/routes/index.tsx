@@ -1,13 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { db } from "~/lib/db"
 import logo from "../logo.svg"
+import { createServerFn } from "@tanstack/react-start"
+
+export const getCategoriesServerFn = createServerFn({
+	method: "GET",
+}).handler(async () => {
+	const categories = await db.categories.findMany()
+	return categories
+})
 
 export const Route = createFileRoute("/")({
 	component: App,
 	loader: async () => {
-		const categories = await db.categories.findMany()
+		const categories = await getCategoriesServerFn()
 		return { categories }
-	},
+	}
 })
 
 function App() {
