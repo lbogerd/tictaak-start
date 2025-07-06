@@ -56,7 +56,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			<head>
 				<HeadContent />
 			</head>
-			<body className="bg-gradient-to-b from-yellow-50 via-orange-50 to-red-50">
+			<body className="bg-gradient-to-b from-yellow-50 via-orange-50 to-red-50 min-h-dvh">
 				{children}
 				<Scripts />
 
