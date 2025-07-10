@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@fontsource/poppins':
+        specifier: 5.2.6
+        version: 5.2.6
       '@prisma/client':
         specifier: 6.11.1
         version: 6.11.1(prisma@6.11.1(typescript@5.8.3))(typescript@5.8.3)
@@ -525,6 +528,9 @@ packages:
 
   '@fastify/busboy@3.1.1':
     resolution: {integrity: sha512-5DGmA8FTdB2XbDeEwc/5ZXBl6UbBAyBOOLlPuBnZ/N1SwdH9Ii+cOX3tBROlDgcTXxjOYnLMVoKk9+FXAw0CJw==}
+
+  '@fontsource/poppins@5.2.6':
+    resolution: {integrity: sha512-NFr0121+vWCfzLDVvSZOzwAjRUaNj6QHA9gtUh/KHHoWf1Qn23EkwVFs63XZ6UtF5K1b3UNmCx77YEMGgV7BOQ==}
 
   '@ioredis/commands@1.2.0':
     resolution: {integrity: sha512-Sx1pU8EM64o2BrqNpEO1CNLtKQwyhuXuqyfH7oGKCk+1a33d2r5saW8zNwm3j6BTExtjrv2BxTgzzkMwts6vGg==}
@@ -4151,6 +4157,8 @@ snapshots:
     optional: true
 
   '@fastify/busboy@3.1.1': {}
+
+  '@fontsource/poppins@5.2.6': {}
 
   '@ioredis/commands@1.2.0': {}
 

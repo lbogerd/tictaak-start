@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router"
+import { createServerFn } from "@tanstack/react-start"
+import { Button } from "~/components/ui/Button"
 import { db } from "~/lib/db"
 import logo from "../logo.svg"
-import { createServerFn } from "@tanstack/react-start"
 
 export const getCategoriesServerFn = createServerFn({
 	method: "GET",
@@ -15,7 +16,7 @@ export const Route = createFileRoute("/")({
 	loader: async () => {
 		const categories = await getCategoriesServerFn()
 		return { categories }
-	}
+	},
 })
 
 function App() {
@@ -51,6 +52,14 @@ function App() {
 			</header>
 
 			<pre className="text-left">{JSON.stringify(categories, null, 2)}</pre>
+
+			<Button variant="default" size="lg" gradient>
+				Click Me
+			</Button>
+
+			<Button variant="secondary" size="lg" gradient>
+				Click Me
+			</Button>
 		</div>
 	)
 }

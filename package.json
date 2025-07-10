@@ -18,6 +18,7 @@
 		"db:gen": "pnpm exec prisma generate"
 	},
 	"dependencies": {
+		"@fontsource/poppins": "5.2.6",
 		"@prisma/client": "6.11.1",
 		"@radix-ui/react-slot": "1.2.3",
 		"@t3-oss/env-core": "0.13.8",
