@@ -1,3 +1,5 @@
+import { useState } from "react"
+import { useHotkey } from "../../hooks/useHotkey"
 import { Card } from "../ui/Card"
 import { Input } from "../ui/Input"
 import {
@@ -35,13 +37,80 @@ export function CreateTask() {
 	)
 }
 
+function AddNewCategoryInput({
+	onSubmit,
+	onCancel,
+}: {
+	onSubmit: (name: string) => void
+	onCancel: () => void
+}) {
+	const [newCategoryName, setNewCategoryName] = useState("")
+
+	const handleSubmit = () => {
+		if (newCategoryName.trim()) {
+			onSubmit(newCategoryName.trim())
+			setNewCategoryName("")
+		}
+	}
+
+	const handleEnterKey = useHotkey("Enter", handleSubmit)
+
+	const handleCancel = () => {
+		setNewCategoryName("")
+		onCancel()
+	}
+
+	return (
+		<Input
+			type="text"
+			placeholder="Enter category name"
+			value={newCategoryName}
+			onChange={(e) => setNewCategoryName(e.target.value)}
+			onKeyDown={handleEnterKey}
+			onBlur={handleCancel}
+			className="w-44"
+			autoFocus
+		/>
+	)
+}
+
 function CategoryDropdown({
 	categories,
 }: {
 	categories: { id: string; name: string }[]
 }) {
+	const [isAddingNew, setIsAddingNew] = useState(false)
+
+	const handleAddNew = () => {
+		setIsAddingNew(true)
+	}
+
+	const handleSubmit = (name: string) => {
+		console.log("New category:", name)
+		setIsAddingNew(false)
+	}
+
+	const handleCancel = () => {
+		setIsAddingNew(false)
+	}
+
+	if (isAddingNew) {
+		return (
+			<AddNewCategoryInput
+				onSubmit={handleSubmit}
+				onCancel={handleCancel}
+			/>
+		)
+	}
+
 	return (
-		<Select>
+		<Select
+			onValueChange={(value) => {
+				if (value === "add-new") {
+					handleAddNew()
+				}
+			}}
+		>
 			<SelectTrigger className="w-44">
 				<SelectValue
 					placeholder="🏷️ Category"
@@ -59,9 +128,7 @@ function CategoryDropdown({
 					value="add-new"
 					className="text-blue-600 focus:bg-blue-100 focus:text-blue-600"
 				>
-					<button type="button" className="w-full text-left">
-						Add new category...
-					</button>
+					Add new category...
 				</SelectItem>
 			</SelectContent>
 		</Select>
