@@ -1,8 +1,10 @@
 import { useState } from "react"
 import { useHotkey } from "../../hooks/useHotkey"
+import { Button } from "../ui/Button"
+import { Calendar } from "../ui/Calendar"
 import { Card } from "../ui/Card"
 import { Input } from "../ui/Input"
-import { Button } from "../ui/Button"
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/Popover"
 import {
 	Select,
 	SelectContent,
@@ -11,36 +13,59 @@ import {
 	SelectValue,
 } from "../ui/Select"
 import { Separator } from "../ui/Separator"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/Tabs"
-import { Calendar } from "../ui/Calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/Popover"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/Tabs"
 
-export function CreateTask() {
+export function CreateTask({
+	categories,
+	onCreateTask,
+	onPlanTask,
+}: {
+	categories: { id: string; name: string }[]
+	onCreateTask?: (task: { text: string; categoryId: string }) => void
+	onPlanTask?: (task: {
+		text: string
+		categoryId: string
+		schedulingType: "once" | "recurring"
+		scheduledDate?: Date
+		recurringType?: "every-day" | "weekdays"
+		selectedWeekdays?: string[]
+	}) => void
+}) {
 	const [taskText, setTaskText] = useState("")
 	const [selectedCategory, setSelectedCategory] = useState("")
 	const [mode, setMode] = useState<"now" | "later">("now")
-	const [schedulingType, setSchedulingType] = useState<"once" | "recurring">("once")
-	const [scheduledDate, setScheduledDate] = useState<Date | undefined>(undefined)
-	const [recurringType, setRecurringType] = useState<"every-day" | "weekdays">("every-day")
+	const [schedulingType, setSchedulingType] = useState<"once" | "recurring">(
+		"once",
+	)
+	const [scheduledDate, setScheduledDate] = useState<Date | undefined>(
+		undefined,
+	)
+	const [recurringType, setRecurringType] = useState<"every-day" | "weekdays">(
+		"every-day",
+	)
 	const [selectedWeekdays, setSelectedWeekdays] = useState<string[]>([])
 
 	const handleCreateNow = () => {
 		if (!taskText.trim()) return
-		console.log("Creating task now:", { taskText, selectedCategory })
+		onCreateTask?.({
+			text: taskText,
+			categoryId: selectedCategory,
+		})
 		setTaskText("")
 		setSelectedCategory("")
 	}
 
 	const handlePlanLater = () => {
 		if (!taskText.trim()) return
-		console.log("Planning task for later:", { 
-			taskText, 
-			selectedCategory, 
-			schedulingType, 
-			scheduledDate, 
-			recurringType,
-			selectedWeekdays 
+		onPlanTask?.({
+			text: taskText,
+			categoryId: selectedCategory,
+			schedulingType,
+			scheduledDate,
+			recurringType: schedulingType === "recurring" ? recurringType : undefined,
+			selectedWeekdays: schedulingType === "recurring" ? selectedWeekdays : [],
 		})
+
 		setTaskText("")
 		setSelectedCategory("")
 		setScheduledDate(undefined)
@@ -50,14 +75,22 @@ export function CreateTask() {
 
 	return (
 		<Card className="px-4 sm:px-6">
-			<Tabs value={mode} onValueChange={(value) => setMode(value as "now" | "later")}>
+			<Tabs
+				value={mode}
+				onValueChange={(value) => setMode(value as "now" | "later")}
+			>
 				<TabsList className="mb-4">
 					<TabsTrigger value="now">Create Now</TabsTrigger>
 					<TabsTrigger value="later">Plan Later</TabsTrigger>
 				</TabsList>
 
 				<TabsContent value="now">
-					<form onSubmit={(e) => { e.preventDefault(); handleCreateNow(); }}>
+					<form
+						onSubmit={(e) => {
+							e.preventDefault()
+							handleCreateNow()
+						}}
+					>
 						<div className="flex flex-col gap-4 sm:flex-row">
 							<Input
 								type="text"
@@ -69,11 +102,7 @@ export function CreateTask() {
 
 							<div className="w-full sm:w-auto">
 								<CategoryDropdown
-									categories={[
-										{ id: "1", name: "Work" },
-										{ id: "2", name: "Personal" },
-										{ id: "3", name: "Hobby" },
-									]}
+									categories={categories}
 									value={selectedCategory}
 									onChange={setSelectedCategory}
 								/>
@@ -87,7 +116,12 @@ export function CreateTask() {
 				</TabsContent>
 
 				<TabsContent value="later">
-					<form onSubmit={(e) => { e.preventDefault(); handlePlanLater(); }}>
+					<form
+						onSubmit={(e) => {
+							e.preventDefault()
+							handlePlanLater()
+						}}
+					>
 						<div className="flex flex-col gap-4">
 							<div className="flex flex-col gap-4 sm:flex-row">
 								<Input
@@ -112,7 +146,12 @@ export function CreateTask() {
 							</div>
 
 							<div className="flex flex-col gap-4 sm:flex-row">
-								<Select value={schedulingType} onValueChange={(value) => setSchedulingType(value as "once" | "recurring")}>
+								<Select
+									value={schedulingType}
+									onValueChange={(value) =>
+										setSchedulingType(value as "once" | "recurring")
+									}
+								>
 									<SelectTrigger className="w-full sm:w-44">
 										<SelectValue placeholder="📅 Schedule Type" />
 									</SelectTrigger>
@@ -124,11 +163,13 @@ export function CreateTask() {
 
 								<Popover>
 									<PopoverTrigger asChild>
-										<Button 
-											variant="outline" 
-											className="w-full sm:flex-1 justify-start text-left font-normal"
+										<Button
+											variant="outline"
+											className="w-full justify-start text-left font-normal sm:flex-1"
 										>
-											{scheduledDate ? scheduledDate.toLocaleDateString() : "📅 Pick a date"}
+											{scheduledDate
+												? scheduledDate.toLocaleDateString()
+												: "📅 Pick a date"}
 										</Button>
 									</PopoverTrigger>
 									<PopoverContent className="w-auto p-0">
@@ -142,8 +183,13 @@ export function CreateTask() {
 								</Popover>
 
 								{schedulingType === "recurring" && (
-									<div className="flex flex-col gap-3 w-full">
-										<Select value={recurringType} onValueChange={(value) => setRecurringType(value as "every-day" | "weekdays")}>
+									<div className="flex w-full flex-col gap-3">
+										<Select
+											value={recurringType}
+											onValueChange={(value) =>
+												setRecurringType(value as "every-day" | "weekdays")
+											}
+										>
 											<SelectTrigger className="w-full sm:w-44">
 												<SelectValue placeholder="🔄 Repeat" />
 											</SelectTrigger>
@@ -152,7 +198,7 @@ export function CreateTask() {
 												<SelectItem value="weekdays">Specific days</SelectItem>
 											</SelectContent>
 										</Select>
-										
+
 										{recurringType === "weekdays" && (
 											<WeekdaySelector
 												selectedDays={selectedWeekdays}
@@ -193,21 +239,21 @@ function WeekdaySelector({
 
 	const toggleDay = (dayId: string) => {
 		if (selectedDays.includes(dayId)) {
-			onChange(selectedDays.filter(id => id !== dayId))
+			onChange(selectedDays.filter((id) => id !== dayId))
 		} else {
 			onChange([...selectedDays, dayId])
 		}
 	}
 
 	return (
-		<div className="flex gap-1 flex-wrap">
+		<div className="flex flex-wrap gap-1">
 			{weekdays.map((day) => (
 				<Button
 					key={day.id}
 					type="button"
 					variant={selectedDays.includes(day.id) ? "default" : "outline"}
 					size="sm"
-					className="w-8 h-8 p-0 rounded-full"
+					className="h-8 w-8 rounded-full p-0"
 					onClick={() => toggleDay(day.id)}
 					title={day.full}
 				>
@@ -281,10 +327,7 @@ function CategoryDropdown({
 
 	if (isAddingNew) {
 		return (
-			<AddNewCategoryInput
-				onSubmit={handleSubmit}
-				onCancel={handleCancel}
-			/>
+			<AddNewCategoryInput onSubmit={handleSubmit} onCancel={handleCancel} />
 		)
 	}
 

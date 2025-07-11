@@ -18,7 +18,7 @@ code {
 :root {
 	--background: var(--color-yellow-50);
 	--foreground: var(--color-neutral-950);
-  --card: color-mix(in oklch, var(--color-white) 90%, transparent 10%);
+	--card: color-mix(in oklch, var(--color-white) 90%, transparent 10%);
 	--card-foreground: var(--color-neutral-950);
 	--popover: var(--color-white);
 	--popover-foreground: var(--color-neutral-950);

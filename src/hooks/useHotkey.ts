@@ -7,7 +7,7 @@ export function useHotkey(key: string, callback: () => void) {
 				callback()
 			}
 		},
-		[key, callback]
+		[key, callback],
 	)
 
 	return handleKeyDown

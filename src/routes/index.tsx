@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
 import { CreateTask } from "~/components/tasks/Create"
-import { Button } from "~/components/ui/Button"
 import { db } from "~/lib/db"
 
 export const getCategoriesServerFn = createServerFn({
@@ -24,9 +23,17 @@ function App() {
 
 	return (
 		<div className="mx-auto max-w-4xl p-4">
-			<CreateTask />
+			<CreateTask
+				categories={categories}
+				onCreateTask={(input) => {
+					console.log("Creating task now:", input)
+				}}
+				onPlanTask={(input) => {
+					console.log("Planning task for later:", input)
+				}}
+			/>
 
-			<pre className="text-left">{JSON.stringify(categories, null, 2)}</pre>
+			{/* <pre className="text-left">{JSON.stringify(categories, null, 2)}</pre>
 
 			<Button variant="default" size="lg" gradient>
 				Click Me
@@ -34,7 +41,7 @@ function App() {
 
 			<Button variant="secondary" size="lg" gradient>
 				Click Me
-			</Button>
+			</Button> */}
 		</div>
 	)
 }
