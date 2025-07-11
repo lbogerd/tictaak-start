@@ -108,7 +108,7 @@ export function CreateTask({
 								/>
 							</div>
 
-							<Button type="submit" className="w-full sm:w-auto">
+							<Button type="submit" className="w-full sm:w-auto" gradient>
 								Create Task
 							</Button>
 						</div>
@@ -177,7 +177,7 @@ export function CreateTask({
 											mode="single"
 											selected={scheduledDate}
 											onSelect={setScheduledDate}
-											initialFocus
+											autoFocus
 										/>
 									</PopoverContent>
 								</Popover>
