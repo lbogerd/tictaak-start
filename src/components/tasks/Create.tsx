@@ -13,16 +13,16 @@ import { Separator } from "../ui/Separator"
 
 export function CreateTask() {
 	return (
-		<Card className="px-6">
+		<Card className="px-4 sm:px-6">
 			<form action="">
-				<div className="flex gap-4">
+				<div className="flex flex-col gap-4 sm:flex-row">
 					<Input
 						type="text"
 						placeholder="What needs to be done?"
-						className="mb-4"
+						className="w-full sm:flex-1"
 					/>
 
-					<div>
+					<div className="w-full sm:w-auto">
 						<CategoryDropdown
 							categories={[
 								{ id: "1", name: "Work" },
@@ -68,7 +68,7 @@ function AddNewCategoryInput({
 			onChange={(e) => setNewCategoryName(e.target.value)}
 			onKeyDown={handleEnterKey}
 			onBlur={handleCancel}
-			className="w-44"
+			className="w-full sm:w-44"
 			autoFocus
 		/>
 	)
@@ -111,7 +111,7 @@ function CategoryDropdown({
 				}
 			}}
 		>
-			<SelectTrigger className="w-44">
+			<SelectTrigger className="w-full sm:w-44">
 				<SelectValue
 					placeholder="🏷️ Category"
 					className="text-muted-foreground"
