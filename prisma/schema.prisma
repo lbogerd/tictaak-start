@@ -1,9 +1,7 @@
 generator client {
-  provider = "prisma-client-js"
-  // still needs to be in the node_modules folder
-  // as otherwise it will complain about 'exports not defined'
-  // https://github.com/prisma/prisma/discussions/21561
-  output   = "../node_modules/@prisma-app/client"
+  provider        = "prisma-client"
+  previewFeatures = ["queryCompiler", "driverAdapters"]
+  output          = "../prisma/client"
 }
 
 datasource db {
@@ -11,26 +9,27 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model categories {
-  id        String   @id
-  name      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime
-  tasks     tasks[]
+model Category {
+  id         String    @id @default(cuid())
+  name       String    @unique
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  archivedAt DateTime?
+  tasks      Task[]
+
+  @@map("categories")
 }
 
-model tasks {
-  id                String     @id
-  title             String
-  categoryId        String
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime
-  isRecurring       Boolean    @default(false)
-  recurringType     String?
-  recurringInterval Int?       @default(1)
-  recurringDays     String?
-  lastPrintedAt     DateTime?
-  nextPrintDate     DateTime?
-  isActive          Boolean    @default(true)
-  categories        categories @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+model Task {
+  id            String    @id @default(cuid())
+  title         String
+  categoryId    String
+  category      Category  @relation(fields: [categoryId], references: [id], onDelete: NoAction)
+  createdAt     DateTime  @default(now())
+  lastPrintedAt DateTime? @default(now())
+  nextPrintDate DateTime? // use to schedule one-off or recurring tasks
+  recursOnDays  Int[] // use to schedule recurring tasks, leave empty for (un)scheduled tasks
+  archivedAt    DateTime?
+
+  @@map("tasks")
 }

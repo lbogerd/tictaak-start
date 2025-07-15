@@ -13,7 +13,8 @@
 			"!**/node_modules/**",
 			"!**/.tanstack/**",
 			"!**/.env*",
-			"!**/routeTree.gen.ts"
+			"!**/routeTree.gen.ts",
+			"!**/prisma/client/**"
 		]
 	},
 	"formatter": {
