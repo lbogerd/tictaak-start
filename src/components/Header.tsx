@@ -1,5 +1,8 @@
 import { Link } from "@tanstack/react-router"
 
+/**
+ * Header component for the application.
+ */
 export default function Header() {
 	return (
 		<header className="flex justify-between gap-2 bg-white p-2 text-black">
