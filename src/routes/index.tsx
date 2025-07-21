@@ -25,6 +25,8 @@ function App() {
 		<div className="mx-auto max-w-4xl p-4">
 			<CreateTask
 				categories={categories}
+				// TODO: Implement these handlers.
+				// Should be done AFTER the rest of the app is implemented.
 				onCreateTask={(input) => {
 					console.log("Creating task now:", input)
 				}}
@@ -32,16 +34,6 @@ function App() {
 					console.log("Planning task for later:", input)
 				}}
 			/>
-
-			{/* <pre className="text-left">{JSON.stringify(categories, null, 2)}</pre>
-
-			<Button variant="default" size="lg" gradient>
-				Click Me
-			</Button>
-
-			<Button variant="secondary" size="lg" gradient>
-				Click Me
-			</Button> */}
 		</div>
 	)
 }
