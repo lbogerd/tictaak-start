@@ -1,7 +1,7 @@
 generator client {
   provider        = "prisma-client"
-  previewFeatures = ["queryCompiler", "driverAdapters"]
   output          = "../prisma/client"
+  previewFeatures = ["driverAdapters", "queryCompiler"]
 }
 
 datasource db {
@@ -16,20 +16,16 @@ model Category {
   updatedAt  DateTime  @updatedAt
   archivedAt DateTime?
   tasks      Task[]
-
-  @@map("categories")
 }
 
 model Task {
   id            String    @id @default(cuid())
   title         String
   categoryId    String
-  category      Category  @relation(fields: [categoryId], references: [id], onDelete: NoAction)
   createdAt     DateTime  @default(now())
   lastPrintedAt DateTime? @default(now())
-  nextPrintDate DateTime? // use to schedule one-off or recurring tasks
-  recursOnDays  Int[] // use to schedule recurring tasks, leave empty for (un)scheduled tasks
+  nextPrintDate DateTime?
+  recursOnDays  Int[]
   archivedAt    DateTime?
-
-  @@map("tasks")
+  category      Category  @relation(fields: [categoryId], references: [id], onDelete: NoAction)
 }
