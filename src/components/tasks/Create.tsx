@@ -1,3 +1,4 @@
+import { addDays, isAfter, startOfDay } from "date-fns"
 import { useState } from "react"
 import { useHotkey } from "../../hooks/useHotkey"
 import { Button } from "../ui/Button"
@@ -13,7 +14,6 @@ import {
 	SelectValue,
 } from "../ui/Select"
 import { Separator } from "../ui/Separator"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/Tabs"
 
 export function CreateTask({
 	categories,
@@ -33,41 +33,55 @@ export function CreateTask({
 }) {
 	const [taskText, setTaskText] = useState("")
 	const [selectedCategory, setSelectedCategory] = useState("")
-	const [mode, setMode] = useState<"now" | "later">("now")
+	const [showScheduling, setShowScheduling] = useState(false)
 	const [schedulingType, setSchedulingType] = useState<"once" | "recurring">(
 		"once",
 	)
+	// Default to tomorrow when scheduling is enabled
 	const [scheduledDate, setScheduledDate] = useState<Date | undefined>(
 		undefined,
 	)
+
+	// Get tomorrow's date
+	const getTomorrowDate = () => addDays(new Date(), 1)
+
+	// Check if date is valid for scheduling (tomorrow or later)
+	const isValidScheduleDate = (date: Date) => {
+		const today = startOfDay(new Date())
+		return isAfter(startOfDay(date), today)
+	}
 	const [recurringType, setRecurringType] = useState<"every-day" | "weekdays">(
 		"every-day",
 	)
 	const [selectedWeekdays, setSelectedWeekdays] = useState<string[]>([])
 
-	const handleCreateNow = () => {
+	const handleSubmit = () => {
 		if (!taskText.trim()) return
-		onCreateTask?.({
-			text: taskText,
-			categoryId: selectedCategory,
-		})
+
+		if (showScheduling && scheduledDate) {
+			// Plan task for later
+			onPlanTask?.({
+				text: taskText,
+				categoryId: selectedCategory,
+				schedulingType,
+				scheduledDate,
+				recurringType:
+					schedulingType === "recurring" ? recurringType : undefined,
+				selectedWeekdays:
+					schedulingType === "recurring" ? selectedWeekdays : [],
+			})
+		} else {
+			// Create task now
+			onCreateTask?.({
+				text: taskText,
+				categoryId: selectedCategory,
+			})
+		}
+
+		// Reset form
 		setTaskText("")
 		setSelectedCategory("")
-	}
-
-	const handlePlanLater = () => {
-		if (!taskText.trim()) return
-		onPlanTask?.({
-			text: taskText,
-			categoryId: selectedCategory,
-			schedulingType,
-			scheduledDate,
-			recurringType: schedulingType === "recurring" ? recurringType : undefined,
-			selectedWeekdays: schedulingType === "recurring" ? selectedWeekdays : [],
-		})
-
-		setTaskText("")
-		setSelectedCategory("")
+		setShowScheduling(false)
 		setScheduledDate(undefined)
 		setRecurringType("every-day")
 		setSelectedWeekdays([])
@@ -75,77 +89,55 @@ export function CreateTask({
 
 	return (
 		<Card className="px-4 sm:px-6">
-			<Tabs
-				value={mode}
-				onValueChange={(value) => setMode(value as "now" | "later")}
+			<form
+				onSubmit={(e) => {
+					e.preventDefault()
+					handleSubmit()
+				}}
 			>
-				<TabsList className="mb-4">
-					<TabsTrigger value="now">Create Now</TabsTrigger>
-					<TabsTrigger value="later">Plan Later</TabsTrigger>
-				</TabsList>
+				<div className="flex flex-col gap-4">
+					{/* Main task input and category row */}
+					<div className="flex flex-col gap-4 sm:flex-row">
+						<Input
+							type="text"
+							placeholder="What needs to be done?"
+							className="w-full sm:flex-1"
+							value={taskText}
+							onChange={(e) => setTaskText(e.target.value)}
+						/>
 
-				<TabsContent value="now">
-					<form
-						onSubmit={(e) => {
-							e.preventDefault()
-							handleCreateNow()
-						}}
-					>
-						<div className="flex flex-col gap-4 sm:flex-row">
-							<Input
-								type="text"
-								placeholder="What needs to be done?"
-								className="w-full sm:flex-1"
-								value={taskText}
-								onChange={(e) => setTaskText(e.target.value)}
+						<div className="w-full sm:w-auto">
+							<CategoryDropdown
+								categories={categories}
+								value={selectedCategory}
+								onChange={setSelectedCategory}
 							/>
-
-							<div className="w-full sm:w-auto">
-								<CategoryDropdown
-									categories={categories}
-									value={selectedCategory}
-									onChange={setSelectedCategory}
-								/>
-							</div>
-
-							<Button type="submit" className="w-full sm:w-auto" gradient>
-								Create Task
-							</Button>
 						</div>
-					</form>
-				</TabsContent>
 
-				<TabsContent value="later">
-					<form
-						onSubmit={(e) => {
-							e.preventDefault()
-							handlePlanLater()
-						}}
-					>
-						<div className="flex flex-col gap-4">
-							<div className="flex flex-col gap-4 sm:flex-row">
-								<Input
-									type="text"
-									placeholder="What needs to be done?"
-									className="w-full sm:flex-1"
-									value={taskText}
-									onChange={(e) => setTaskText(e.target.value)}
-								/>
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => {
+								setShowScheduling(!showScheduling)
+								// Set default to tomorrow when enabling scheduling
+								if (!showScheduling && !scheduledDate) {
+									setScheduledDate(getTomorrowDate())
+								}
+							}}
+							className="w-full sm:w-auto"
+						>
+							{showScheduling ? "Remove Schedule" : "Schedule Later"}
+						</Button>
 
-								<div className="w-full sm:w-auto">
-									<CategoryDropdown
-										categories={[
-											{ id: "1", name: "Work" },
-											{ id: "2", name: "Personal" },
-											{ id: "3", name: "Hobby" },
-										]}
-										value={selectedCategory}
-										onChange={setSelectedCategory}
-									/>
-								</div>
-							</div>
+						<Button type="submit" className="w-full sm:w-auto" gradient>
+							{showScheduling && scheduledDate ? "Plan Task" : "Create Task"}
+						</Button>
+					</div>
 
-							<div className="flex flex-col gap-4 sm:flex-row">
+					{/* Collapsible scheduling controls */}
+					{showScheduling && (
+						<div className="flex flex-col gap-4 border-t pt-4">
+							<div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap">
 								<Select
 									value={schedulingType}
 									onValueChange={(value) =>
@@ -176,46 +168,50 @@ export function CreateTask({
 										<Calendar
 											mode="single"
 											selected={scheduledDate}
-											onSelect={setScheduledDate}
+											onSelect={(date) => {
+												// Only allow selection of valid dates (tomorrow or later)
+												if (date && isValidScheduleDate(date)) {
+													setScheduledDate(date)
+												}
+											}}
+											disabled={(date) => !isValidScheduleDate(date)}
 											autoFocus
 										/>
 									</PopoverContent>
 								</Popover>
 
 								{schedulingType === "recurring" && (
-									<div className="flex w-full flex-col gap-3">
-										<Select
-											value={recurringType}
-											onValueChange={(value) =>
-												setRecurringType(value as "every-day" | "weekdays")
-											}
-										>
-											<SelectTrigger className="w-full sm:w-44">
-												<SelectValue placeholder="🔄 Repeat" />
-											</SelectTrigger>
-											<SelectContent>
-												<SelectItem value="every-day">Every day</SelectItem>
-												<SelectItem value="weekdays">Specific days</SelectItem>
-											</SelectContent>
-										</Select>
+									<Select
+										value={recurringType}
+										onValueChange={(value) =>
+											setRecurringType(value as "every-day" | "weekdays")
+										}
+									>
+										<SelectTrigger className="w-full sm:w-44">
+											<SelectValue placeholder="🔄 Repeat" />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="every-day">Every day</SelectItem>
+											<SelectItem value="weekdays">Specific days</SelectItem>
+										</SelectContent>
+									</Select>
+								)}
+							</div>
 
-										{recurringType === "weekdays" && (
-											<WeekdaySelector
-												selectedDays={selectedWeekdays}
-												onChange={setSelectedWeekdays}
-											/>
-										)}
+							{/* Weekday selector - separate row when recurring + specific days */}
+							{schedulingType === "recurring" &&
+								recurringType === "weekdays" && (
+									<div className="flex w-full">
+										<WeekdaySelector
+											selectedDays={selectedWeekdays}
+											onChange={setSelectedWeekdays}
+										/>
 									</div>
 								)}
-
-								<Button type="submit" className="w-full sm:w-auto">
-									Plan Task
-								</Button>
-							</div>
 						</div>
-					</form>
-				</TabsContent>
-			</Tabs>
+					)}
+				</div>
+			</form>
 		</Card>
 	)
 }
@@ -228,13 +224,13 @@ function WeekdaySelector({
 	onChange: (days: string[]) => void
 }) {
 	const weekdays = [
-		{ id: "mon", name: "M", full: "Monday" },
-		{ id: "tue", name: "T", full: "Tuesday" },
-		{ id: "wed", name: "W", full: "Wednesday" },
-		{ id: "thu", name: "T", full: "Thursday" },
-		{ id: "fri", name: "F", full: "Friday" },
-		{ id: "sat", name: "S", full: "Saturday" },
-		{ id: "sun", name: "S", full: "Sunday" },
+		{ id: "mon", name: "mon", full: "Monday" },
+		{ id: "tue", name: "tue", full: "Tuesday" },
+		{ id: "wed", name: "wed", full: "Wednesday" },
+		{ id: "thu", name: "thu", full: "Thursday" },
+		{ id: "fri", name: "fri", full: "Friday" },
+		{ id: "sat", name: "sat", full: "Saturday" },
+		{ id: "sun", name: "sun", full: "Sunday" },
 	]
 
 	const toggleDay = (dayId: string) => {
@@ -246,14 +242,14 @@ function WeekdaySelector({
 	}
 
 	return (
-		<div className="flex flex-wrap gap-1">
+		<div className="flex flex-wrap gap-2 pt-1">
 			{weekdays.map((day) => (
 				<Button
 					key={day.id}
 					type="button"
-					variant={selectedDays.includes(day.id) ? "default" : "outline"}
+					variant={selectedDays.includes(day.id) ? "accent" : "outline"}
 					size="sm"
-					className="h-8 w-8 rounded-full p-0"
+					className="h-8 min-w-12 rounded-sm px-2 font-normal capitalize"
 					onClick={() => toggleDay(day.id)}
 					title={day.full}
 				>
@@ -348,18 +344,21 @@ function CategoryDropdown({
 					className="text-muted-foreground"
 				/>
 			</SelectTrigger>
+
 			<SelectContent>
 				{categories.map((category) => (
 					<SelectItem key={category.id} value={category.id}>
 						{category.name}
 					</SelectItem>
 				))}
+
 				<Separator className="m-0.5" />
+
 				<SelectItem
 					value="add-new"
 					className="text-blue-600 focus:bg-blue-100 focus:text-blue-600"
 				>
-					Add new category...
+					➕ Add new category...
 				</SelectItem>
 			</SelectContent>
 		</Select>

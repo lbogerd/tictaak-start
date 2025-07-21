@@ -15,9 +15,9 @@ const buttonVariants = tv({
 			accent:
 				"bg-accent text-accent-foreground from-accent to-accent-light shadow-accent-light focus-visible:ring-accent/20 dark:focus-visible:ring-accent/40 dark:bg-accent/60",
 			ghost:
-				"bg-transparent text-foreground shadow-none hover:bg-accent/10 focus-visible:ring-accent/20 dark:hover:bg-accent/20 dark:focus-visible:ring-accent/40",
+				"bg-transparent text-foreground shadow-none hover:bg-secondary/10 focus-visible:ring-secondary/20 dark:hover:bg-secondary/20 dark:focus-visible:ring-secondary/40",
 			outline:
-				"border border-border bg-transparent text-foreground shadow-none hover:bg-accent/10 focus-visible:ring-accent/20 dark:hover:bg-accent/20 dark:focus-visible:ring-accent/40",
+				"border border-border bg-transparent text-foreground shadow-none hover:bg-primary/10 focus-visible:ring-primary/20 dark:hover:bg-primary/20 dark:focus-visible:ring-primary/40",
 		},
 		size: {
 			default: "h-9 px-4 py-2 has-[>svg]:px-3",
