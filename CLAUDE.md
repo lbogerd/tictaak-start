@@ -9,6 +9,7 @@ The most important technical guidelines for this project are as follows. Read th
 - Use **comments** to explain important decisions and complex logic.
 - Use **`shacn/ui`** as the base for UI components. Install new components as needed.
 - Use **`tailwind-variants`** (`tv({ ... })`) for component variants, **NOT** `cva`.
+- Prefer using the **color palette** defined in `src/colors.css` by using mostly `primary`, `secondary`, and `accent` colors.
 - Use **`@tanstack/react-router`** and **`@tanstack/react-start`** for:
   - Routing and navigation within the application.
   - Data loading via `loader` functions.
