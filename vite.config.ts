@@ -13,9 +13,6 @@ const config = defineConfig({
 		tanstackStart(),
 	],
 	test: {
-		// env: {
-		// 	DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/testdb",
-		// },
 		globals: true,
 		// run sequentially because local Prisma Postgres is single‑connection
 		sequence: { concurrent: false },
