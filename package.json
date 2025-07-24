@@ -15,7 +15,7 @@
 		"prebuild": "bash scripts/git-sha-to-public.sh",
 		"build": "pnpm run db:gen && vite build",
 		"serve": "vite preview",
-		"test": "vitest run",
+		"test": "./test/start-db.sh && pnpm dlx prisma db push --force-reset --skip-generate && pnpm dlx prisma db seed && vitest run && ./test/delete-db.sh",
 		"fix": "pnpx biome lint --write --unsafe && pnpx biome format --write",
 		"comp:add": "pnpx shadcn@latest add",
 		"db:gen": "pnpx prisma generate",
