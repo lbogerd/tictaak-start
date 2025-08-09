@@ -1,18 +1,45 @@
-import { describe, expect, it } from "vitest"
-import { create } from "./ticket.service"
+import { PGlite } from "@electric-sql/pglite"
+import { PrismaPGlite } from "pglite-prisma-adapter"
+import { PrismaClient } from "prisma/client/client"
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
+import { TicketService } from "./ticket.service"
 
 describe("ticketService", () => {
-	describe("create", () => {
-		it("should create a new ticket", async () => {
-			const data: Parameters<typeof create>[0] = {
-				categoryId: "cat-1",
-				nextPrintDate: new Date(),
-				title: "test",
-			}
-			const result = await create(data)
+	let pgClient: PGlite
+	let adapter: PrismaPGlite
+	let client: PrismaClient
+	let service: TicketService
 
-			// temporary test
-			expect(result).toBeTruthy()
+	beforeAll(() => {
+		pgClient = new PGlite("prisma/pglite")
+		adapter = new PrismaPGlite(pgClient)
+		client = new PrismaClient({
+			adapter,
 		})
+		service = new TicketService(client)
+	})
+
+	beforeEach(async () => {
+		await client.task.deleteMany()
+	})
+
+	afterAll(async () => {
+		await client.$disconnect()
+		await pgClient.close()
+	})
+
+	it("should create a ticket", async () => {
+		const input = {
+			title: "Test Ticket",
+			description: "This is a test ticket",
+			categoryId: "category-1",
+			nextPrintDate: new Date(),
+		}
+
+		const ticket = await service.create(input)
+
+		expect(ticket).toHaveProperty("id")
+		expect(ticket.title).toBe(input.title)
+		expect(ticket.description).toBe(input.description)
 	})
 })
