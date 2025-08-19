@@ -8,8 +8,8 @@ export const env = createEnv({
 			.enum(["development", "production", "test"])
 			.optional()
 			.default("development"),
-		DATABASE_URL: z.string().url(),
-		PRINTER_URL: z.string().url().optional(),
+		DATABASE_URL: z.url(),
+		PRINTER_URL: z.url().optional(),
 	},
 
 	/**
