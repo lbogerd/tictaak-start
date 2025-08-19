@@ -1,9 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
+import { fallback, zodValidator } from "@tanstack/zod-adapter"
+import z from "zod"
 import { CreateTask } from "~/components/tasks/CreateTask"
 import { db } from "~/lib/db"
+import { createSearchParamFilter } from "~/lib/router/searchMiddleware"
+import type { Category, Task } from "~/lib/schema"
 import { getAll } from "~/lib/services/task.service"
 
+interface IndexSearchParams {
+	showArchived: boolean
+}
+
+// TODO: move to own categories service
 export const getCategoriesServerFn = createServerFn({
 	method: "GET",
 }).handler(async () => {
@@ -11,18 +20,39 @@ export const getCategoriesServerFn = createServerFn({
 	return categories
 })
 
+const indexSearchParamsSchema = z.object({
+	showArchived: fallback(z.boolean(), false).default(false),
+})
+
 export const Route = createFileRoute("/")({
 	component: App,
-	loader: async () => {
+	// validate and use search params to toggle showing archived tasks
+	validateSearch: zodValidator(indexSearchParamsSchema),
+	// Cast to satisfy current router type inference
+	loaderDeps: ({ search }) => ({
+		showArchived: (search as IndexSearchParams).showArchived,
+	}),
+	loader: async ({ deps: { showArchived } }) => {
 		const categories = await getCategoriesServerFn()
-		const tasks = await getAll()
+		const tasks = await getAll(showArchived)
 
 		return { categories, tasks }
 	},
+
+	search: {
+		middlewares: [
+			// Omit showArchived when false so URL stays clean
+			createSearchParamFilter<{ showArchived?: boolean }>([
+				{ key: "showArchived", shouldOmit: (v) => v === false },
+			]),
+		],
+	},
 })
 
+type IndexLoaderData = { categories: Category[]; tasks: Task[] }
+
 function App() {
-	const { categories, tasks } = Route.useLoaderData()
+	const { categories, tasks } = Route.useLoaderData() as IndexLoaderData
 
 	return (
 		<div className="mx-auto max-w-4xl p-4">
