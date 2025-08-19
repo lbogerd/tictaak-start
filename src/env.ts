@@ -3,7 +3,11 @@ import { z } from "zod"
 
 export const env = createEnv({
 	server: {
-		SERVER_URL: z.string().url().optional(),
+		NODE_ENV: z
+			.enum(["development", "production", "test"])
+			.optional()
+			.default("development"),
+		PRINTER_URL: z.string().url().optional(),
 		DATABASE_URL: z.string().url(),
 	},
 
@@ -18,10 +22,13 @@ export const env = createEnv({
 	},
 
 	/**
-	 * What object holds the environment variables at runtime. This is usually
-	 * `process.env` or `import.meta.env`.
+	 * What object holds the environment variables at runtime. For server-side
+	 * code we must use `process.env` so values from a `.env` file or the
+	 * process environment are available. `import.meta.env` is a Vite/browser
+	 * construct and won't contain plain server-only variables like
+	 * `DATABASE_URL`.
 	 */
-	runtimeEnv: import.meta.env,
+	runtimeEnv: process.env,
 
 	/**
 	 * By default, this library will feed the environment variables directly to
