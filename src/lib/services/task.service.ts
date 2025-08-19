@@ -1,0 +1,100 @@
+import { startOfDay } from "date-fns"
+import { and, eq, gt, isNull, lt, lte } from "drizzle-orm"
+import { db } from "~/lib/db"
+import { type NewTask, tasks } from "~/lib/schema"
+
+/**
+ * Create a new ticket.
+ * @param input - The input data for the ticket.
+ * @returns The created ticket.
+ */
+export async function create(
+	input: Omit<NewTask, "archivedAt" | "createdAt" | "id" | "lastPrintedAt">,
+) {
+	return await db.insert(tasks).values(input).returning()
+}
+
+/**
+ * Get a ticket by ID
+ * @param id - The ID of the ticket
+ * @param includeArchived - Whether to include archived tickets
+ * @returns The ticket.
+ */
+export async function getById(id: string, includeArchived = false) {
+	return await db.query.tasks.findFirst({
+		where: and(
+			eq(tasks.id, id),
+			includeArchived ? undefined : isNull(tasks.archivedAt),
+		),
+	})
+}
+
+/**
+ * Get all tickets
+ * @param includeArchived - Whether to include archived tickets
+ * @param skip - Number of records to skip (for pagination)
+ * @param take - Number of records to take (for pagination)
+ * @returns All tickets.
+ */
+export async function getAll(
+	includeArchived = false,
+	skip?: number,
+	take?: number,
+) {
+	return await db.query.tasks.findMany({
+		where: includeArchived ? undefined : isNull(tasks.archivedAt),
+		offset: skip,
+		limit: take,
+	})
+}
+
+/**
+ * Get all tickets by category
+ * @param categoryId - The ID of the category
+ * @param includeArchived - Whether to include archived tickets
+ * @returns All tickets by category.
+ */
+export async function getByCategoryId(
+	categoryId: string,
+	includeArchived = false,
+) {
+	return await db.query.tasks.findMany({
+		where: and(
+			eq(tasks.categoryId, categoryId),
+			includeArchived ? undefined : isNull(tasks.archivedAt),
+		),
+	})
+}
+
+/**
+ * Get all upcoming tickets. Will always exclude archived tickets.
+ * @param date - The date to get upcoming tickets for. Defaults to today.
+ * @returns All upcoming tickets.
+ */
+export async function getUpcoming(date?: Date) {
+	const startDate = startOfDay(date ?? new Date())
+	return await db.query.tasks.findMany({
+		where: and(
+			gt(tasks.nextPrintDate, startDate),
+			lt(tasks.lastPrintedAt, startDate),
+			isNull(tasks.archivedAt),
+		),
+	})
+}
+
+/**
+ * Get all due tickets. Will always exclude archived tickets. Includes tickets that were due earlier but not printed yet.
+ * @param date - The date to get due tickets for. Defaults to today.
+ * @returns All due tickets.
+ */
+export async function getDue(date?: Date) {
+	const dueDate = startOfDay(date ?? new Date())
+
+	return await db.query.tasks.findMany({
+		where: and(
+			lte(tasks.nextPrintDate, dueDate),
+			lt(tasks.lastPrintedAt, tasks.nextPrintDate),
+			isNull(tasks.archivedAt),
+		),
+	})
+}
