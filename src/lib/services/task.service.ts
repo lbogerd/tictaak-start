@@ -2,7 +2,7 @@ import { startOfDay } from "date-fns"
 import type { PrismaClient } from "../../../prisma/client/client"
 import type { TaskUncheckedCreateInput } from "../../../prisma/client/models"
 
-export class TicketService {
+export class TaskService {
 	constructor(private readonly db: PrismaClient) {}
 
 	create(
@@ -73,4 +73,4 @@ export class TicketService {
 
 // Create a default instance using the global db
 import { db } from "~/lib/db"
-export const ticketService = new TicketService(db)
+export const taskService = new TaskService(db)

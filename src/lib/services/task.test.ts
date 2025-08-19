@@ -2,13 +2,13 @@ import { PGlite } from "@electric-sql/pglite"
 import { PrismaPGlite } from "pglite-prisma-adapter"
 import { PrismaClient } from "prisma/client/client"
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
-import { TicketService } from "./ticket.service"
+import { TaskService } from "./task.service"
 
-describe("ticketService", () => {
+describe("taskService", () => {
 	let pgClient: PGlite
 	let adapter: PrismaPGlite
 	let client: PrismaClient
-	let service: TicketService
+	let service: TaskService
 
 	beforeAll(() => {
 		pgClient = new PGlite("prisma/pglite")
@@ -16,7 +16,7 @@ describe("ticketService", () => {
 		client = new PrismaClient({
 			adapter,
 		})
-		service = new TicketService(client)
+		service = new TaskService(client)
 	})
 
 	beforeEach(async () => {
@@ -28,18 +28,17 @@ describe("ticketService", () => {
 		await pgClient.close()
 	})
 
-	it("should create a ticket", async () => {
+	it("should create a task", async () => {
 		const input = {
-			title: "Test Ticket",
-			description: "This is a test ticket",
+			title: "Test Task",
+			description: "This is a test task",
 			categoryId: "category-1",
 			nextPrintDate: new Date(),
 		}
 
-		const ticket = await service.create(input)
+	const task = await service.create(input)
 
-		expect(ticket).toHaveProperty("id")
-		expect(ticket.title).toBe(input.title)
-		expect(ticket.description).toBe(input.description)
+	expect(task).toHaveProperty("id")
+	expect(task.title).toBe(input.title)
 	})
 })

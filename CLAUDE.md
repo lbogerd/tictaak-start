@@ -1,8 +1,8 @@
 # TicTaak – planned features
 
-- Create todo “tickets” with title, optional notes, category, first‑print time, and optional weekday recurrence.
-- Categories are managed in a fixed list; each ticket links to one (or none).
-- Manual printing: user selects due tickets (or “print all due now”); each task prints as its own ESC/POS slip and one‑off tickets auto‑archive afterward.
+- Create tasks with title, optional notes, category, first‑print time, and optional weekday recurrence.
+- Categories are managed in a fixed list; each task links to one (or none).
+- Manual printing: user selects due tasks (or “print all due now”); each task prints as its own ESC/POS slip and one‑off tasks auto‑archive afterward.
 - Views & filters: Due, Printed today, Future, All, Archived + full‑text / date / category search.
 
 ## Tech details
