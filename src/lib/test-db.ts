@@ -1,7 +1,7 @@
 import { PGlite } from "@electric-sql/pglite"
 import { drizzle } from "drizzle-orm/pglite"
 import { migrate } from "drizzle-orm/pglite/migrator"
-import * as schema from "./schema"
+import * as schema from "./schema.ts"
 
 export function createTestDb() {
 	const client = new PGlite() // In-memory Postgres
@@ -10,10 +10,10 @@ export function createTestDb() {
 
 export async function setupTestDb() {
 	const db = createTestDb()
-	
+
 	// Run migrations using drizzle-kit generated migrations
 	await migrate(db, { migrationsFolder: "./drizzle" })
-	
+
 	return db
 }
 
@@ -25,7 +25,7 @@ export async function seedTestDb(db: ReturnType<typeof createTestDb>) {
 			name: "Test Category",
 		},
 	])
-	
+
 	// Insert test tasks
 	await db.insert(schema.tasks).values([
 		{

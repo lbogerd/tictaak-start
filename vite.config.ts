@@ -12,11 +12,6 @@ const config = defineConfig({
 		tailwindcss(),
 		tanstackStart(),
 	],
-	test: {
-		globals: true,
-		// run sequentially because pglite is single-connection
-		sequence: { concurrent: false },
-	},
 })
 
 export default config

@@ -1,3 +1,4 @@
+import "dotenv/config"
 import { createEnv } from "@t3-oss/env-core"
 import { z } from "zod"
 
@@ -7,8 +8,8 @@ export const env = createEnv({
 			.enum(["development", "production", "test"])
 			.optional()
 			.default("development"),
-		PRINTER_URL: z.string().url().optional(),
 		DATABASE_URL: z.string().url(),
+		PRINTER_URL: z.string().url().optional(),
 	},
 
 	/**
