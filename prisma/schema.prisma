@@ -23,7 +23,7 @@ model Task {
   title         String
   categoryId    String
   createdAt     DateTime  @default(now())
-  lastPrintedAt DateTime? @default(now())
+  lastPrintedAt DateTime?
   nextPrintDate DateTime?
   recursOnDays  Int[]
   archivedAt    DateTime?

@@ -6,7 +6,7 @@ import { db } from "~/lib/db"
 export const getCategoriesServerFn = createServerFn({
 	method: "GET",
 }).handler(async () => {
-	const categories = await db.category.findMany()
+	const categories = await db.query.categories.findMany()
 	return categories
 })
 

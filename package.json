@@ -6,25 +6,22 @@
 	"engines": {
 		"node": ">=24"
 	},
-	"prisma": {
-		"seed": "node --experimental-strip-types prisma/seed-data.ts"
-	},
 	"scripts": {
 		"dev": "vite dev --port 3000",
 		"start": "node .output/server/index.mjs",
 		"prebuild": "bash scripts/git-sha-to-public.sh",
-		"build": "pnpm run db:gen && vite build",
+		"build": "vite build",
 		"serve": "vite preview",
-		"test": "./test/start-db.sh && pnpm dlx prisma db push --force-reset --skip-generate && pnpm dlx prisma db seed && vitest run && ./test/delete-db.sh",
+		"test": "vitest run",
 		"fix": "pnpx biome lint --write --unsafe && pnpx biome format --write",
 		"comp:add": "pnpx shadcn@latest add",
-		"db:gen": "pnpx prisma generate",
-		"db:reset": "pnpx prisma db push --force-reset && pnpx prisma db seed",
-		"db:reset:no-gen": "pnpx prisma db push --force-reset --skip-generate && pnpx prisma db seed"
+		"db:generate": "pnpx drizzle-kit generate",
+		"db:push": "pnpx drizzle-kit push",
+		"db:seed": "node --experimental-strip-types src/lib/seed.ts",
+		"db:reset": "pnpm run db:push && pnpm run db:seed"
 	},
 	"dependencies": {
 		"@fontsource/poppins": "5.2.6",
-		"@prisma/client": "6.11.1",
 		"@radix-ui/react-popover": "1.1.14",
 		"@radix-ui/react-select": "2.2.5",
 		"@radix-ui/react-separator": "1.1.7",
@@ -39,7 +36,9 @@
 		"@tanstack/router-plugin": "1.125.4",
 		"clsx": "2.1.1",
 		"date-fns": "4.1.0",
+		"drizzle-orm": "0.44.3",
 		"lucide-react": "0.525.0",
+		"pg": "8.16.3",
 		"react": "19.1.0",
 		"react-day-picker": "9.8.0",
 		"react-dom": "19.1.0",
@@ -53,14 +52,16 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.0.6",
+		"@electric-sql/pglite": "0.3.5",
 		"@testing-library/dom": "10.4.0",
 		"@testing-library/react": "16.3.0",
+		"@types/pg": "8.15.4",
 		"@types/react": "19.1.8",
 		"@types/react-dom": "19.1.6",
 		"@vitejs/plugin-react": "4.6.0",
+		"drizzle-kit": "0.31.4",
 		"fs-extra": "11.3.0",
 		"husky": "9.1.7",
-		"prisma": "6.11.1",
 		"typescript": "5.8.3",
 		"vite": "6.1.0",
 		"vitest": "3.2.4",
