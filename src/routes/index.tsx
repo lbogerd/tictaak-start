@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
-import { CreateTask } from "~/components/tasks/Create"
+import { CreateTask } from "~/components/tasks/CreateTask"
 import { db } from "~/lib/db"
 import { getAll } from "~/lib/services/task.service"
 
