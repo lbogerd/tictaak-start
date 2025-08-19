@@ -14,7 +14,7 @@
 			"!**/.tanstack/**",
 			"!**/.env*",
 			"!**/routeTree.gen.ts",
-			"!**/prisma/client/**"
+			"!**/drizzle/**"
 		]
 	},
 	"formatter": {

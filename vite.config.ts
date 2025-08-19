@@ -14,7 +14,7 @@ const config = defineConfig({
 	],
 	test: {
 		globals: true,
-		// run sequentially because local Prisma Postgres is single‑connection
+		// run sequentially because pglite is single-connection
 		sequence: { concurrent: false },
 	},
 })
