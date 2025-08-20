@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
 import { CreateTask } from "~/components/tasks/CreateTask"
-import { db } from "~/lib/db"
-import { getAll } from "~/lib/services/task.service"
+import { db } from "~/logic/db/db"
+import { getAll } from "~/logic/services/task.service"
 
 export const getCategoriesServerFn = createServerFn({
 	method: "GET",

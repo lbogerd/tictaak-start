@@ -1,5 +1,5 @@
 import { addDays, getDay } from "date-fns"
-import type { NewCategory, NewTask } from "~/lib/schema"
+import type { NewCategory, NewTask } from "~/logic/db/schema.ts"
 import { db } from "./db.ts"
 import { categories as categoriesTable, tasks as tasksTable } from "./schema.ts"
 

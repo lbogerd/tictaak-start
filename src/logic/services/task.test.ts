@@ -1,11 +1,13 @@
+import { addDays } from "date-fns"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import * as schema from "../schema"
-import { seedTestDb, setupTestDb } from "../test-db"
+import * as schema from "../db/schema"
+import { seedTestDb, setupTestDb } from "../db/test-db"
 import {
 	create,
 	getAll,
 	getByCategoryId,
 	getById,
+	getDue,
 	getUpcoming,
 } from "./task.service"
 
@@ -22,7 +24,7 @@ describe("taskService", () => {
 		await seedTestDb(db)
 
 		// Replace the mocked db with our test database
-		const dbModule = await import("../db")
+		const dbModule = await import("../db/db")
 		vi.mocked(dbModule).db = db as unknown as typeof dbModule.db
 	})
 
@@ -156,7 +158,44 @@ describe("taskService", () => {
 		})
 
 		it("should show tasks in the past that are yet to be printed", async () => {
-			
+			const yesterday = addDays(new Date(), -1)
+
+			const twoDaysAgo = addDays(new Date(), -2)
+
+			// due: nextPrintDate is yesterday and lastPrintedAt is two days ago (< nextPrintDate)
+			await db.insert(schema.tasks).values({
+				id: "due-task",
+				title: "Due Task",
+				categoryId: "cat-1",
+				nextPrintDate: yesterday,
+				lastPrintedAt: twoDaysAgo,
+			})
+
+			// not due: it was printed after the nextPrintDate
+			await db.insert(schema.tasks).values({
+				id: "printed-task",
+				title: "Printed Task",
+				categoryId: "cat-1",
+				nextPrintDate: yesterday,
+				lastPrintedAt: new Date(), // today > yesterday
+			})
+
+			// not due: task is archived
+			await db.insert(schema.tasks).values({
+				id: "archived-due",
+				title: "Archived Due",
+				categoryId: "cat-1",
+				nextPrintDate: yesterday,
+				lastPrintedAt: twoDaysAgo,
+				archivedAt: new Date(),
+			})
+
+			const result = await getDue()
+
+			expect(result.some((t) => t.id === "due-task")).toBe(true)
+			expect(result.some((t) => t.id === "printed-task")).toBe(false)
+			expect(result.some((t) => t.id === "archived-due")).toBe(false)
+			expect(result.every((t) => !t.archivedAt)).toBe(true)
 		})
 	})
 
@@ -167,6 +206,7 @@ describe("taskService", () => {
 				categoryId: "cat-1",
 			}
 			const result = await create(newTask)
+
 			expect(result).toBeDefined()
 			expect(result[0].title).toBe(newTask.title)
 			expect(result[0].categoryId).toBe(newTask.categoryId)

@@ -1,7 +1,7 @@
 import { startOfDay } from "date-fns"
 import { and, eq, gt, isNull, lt, lte } from "drizzle-orm"
-import { db } from "~/lib/db"
-import { type NewTask, tasks } from "~/lib/schema"
+import { db } from "~/logic/db/db"
+import { type NewTask, tasks } from "~/logic/db/schema"
 
 /**
  * Create a new ticket.
