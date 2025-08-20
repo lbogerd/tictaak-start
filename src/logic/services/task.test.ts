@@ -1,7 +1,13 @@
 import { addDays } from "date-fns"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it } from "vitest"
+import {
+	createPgliteDb,
+	migratePgliteDb,
+	seedTestData,
+	type TestDb,
+} from "../db/adapters"
+import { setDb } from "../db/db"
 import * as schema from "../db/schema"
-import { seedTestDb, setupTestDb } from "../db/test-db"
 import {
 	create,
 	getAll,
@@ -11,21 +17,16 @@ import {
 	getUpcoming,
 } from "./task.service"
 
-// Mock the db module to use our test database
-vi.mock("../db", () => ({
-	db: null, // Will be replaced in beforeEach
-}))
-
 describe("taskService", () => {
-	let db: Awaited<ReturnType<typeof setupTestDb>>
+	let db: TestDb
 
 	beforeEach(async () => {
-		db = await setupTestDb()
-		await seedTestDb(db)
+		db = createPgliteDb()
 
-		// Replace the mocked db with our test database
-		const dbModule = await import("../db/db")
-		vi.mocked(dbModule).db = db as unknown as typeof dbModule.db
+		await migratePgliteDb(db)
+		await seedTestData(db)
+
+		setDb(db as unknown as typeof import("../db/db").db)
 	})
 
 	describe("getById", () => {

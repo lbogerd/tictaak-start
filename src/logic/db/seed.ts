@@ -57,16 +57,20 @@ export const tasks = [
 	},
 ] satisfies NewTask[]
 
+export async function seedDevData() {
+	for (const category of categories) {
+		await db.insert(categoriesTable).values(category)
+		console.log(`Created category: ${category.name}`)
+	}
+
+	for (const task of tasks) {
+		await db.insert(tasksTable).values(task)
+		console.log(`Created task: ${task.title}`)
+	}
+}
+
 console.log("Seeding database...")
 
-for (const category of categories) {
-	await db.insert(categoriesTable).values(category)
-	console.log(`Created category: ${category.name}`)
-}
-
-for (const task of tasks) {
-	await db.insert(tasksTable).values(task)
-	console.log(`Created task: ${task.title}`)
-}
+await seedDevData()
 
 console.log("Database seeded successfully!")

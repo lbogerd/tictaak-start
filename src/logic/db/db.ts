@@ -1,10 +1,9 @@
-import { drizzle } from "drizzle-orm/node-postgres"
-import { Pool } from "pg"
 import { env } from "../../env.ts"
-import * as schema from "./schema.ts"
+import { createPgDb } from "./adapters"
 
-const pool = new Pool({
-	connectionString: env.DATABASE_URL,
-})
+// export mutable db reference so tests can swap to pglite
+export let db = createPgDb(env.DATABASE_URL)
 
-export const db = drizzle(pool, { schema })
+export function setDb(newDb: typeof db) {
+	db = newDb as typeof db
+}
