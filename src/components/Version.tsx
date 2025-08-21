@@ -50,8 +50,9 @@ export default function Version() {
 
 	if (!info) return null
 
-	const short = `${info.package} - ${info.sha}${info.dirty ? "+" : ""}`
-	const title = `version ${info.package}\nsha ${info.sha}${info.dirty ? " (dirty)" : ""}\ntag ${info.tag ?? "(none)"}\nmode ${info.mode}\ncommit ${info.commitTime}\nbuild ${info.buildTime}`
+	const ident = info.sha || info.tag || info.buildTime
+	const short = `${info.package} - ${ident}${info.dirty ? "+" : ""}`
+	const title = `version ${info.package}\nsha ${info.sha || "(none)"}${info.dirty ? " (dirty)" : ""}\ntag ${info.tag ?? "(none)"}\nmode ${info.mode}\ncommit ${info.commitTime || "(n/a)"}\nbuild ${info.buildTime}`
 
 	return (
 		<div className="mt-4 text-center text-gray-500 text-xs" title={title}>

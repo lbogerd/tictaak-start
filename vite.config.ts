@@ -23,12 +23,40 @@ function safeGit(cmd: string, fallback = "") {
 }
 
 function computeVersionInfo(mode: string) {
-	const sha = safeGit("git rev-parse --short HEAD")
-	const tag = safeGit("git describe --tags --abbrev=0") || null
-	const dirty = !!safeGit('test -n "$(git status --porcelain)" && echo dirty')
-	const commitTime = safeGit("git show -s --format=%cI HEAD")
+	// Prefer explicit env vars first (supporting many PaaS providers), then git
+	const shaCandidate =
+		process.env.APP_GIT_SHA ||
+		process.env.GIT_SHA ||
+		process.env.GIT_REV ||
+		process.env.SOURCE_VERSION || // Dokku / Herokuish
+		process.env.HEROKU_SLUG_COMMIT ||
+		process.env.VERCEL_GIT_COMMIT_SHA ||
+		process.env.NETLIFY_COMMIT_REF ||
+		process.env.CF_PAGES_COMMIT_SHA ||
+		safeGit("git rev-parse --short HEAD") ||
+		""
+	const sha = /[a-f0-9]{12,40}/i.test(shaCandidate)
+		? shaCandidate.slice(0, 12)
+		: shaCandidate
+
+	const tag =
+		process.env.APP_GIT_TAG ||
+		process.env.GIT_TAG ||
+		safeGit("git describe --tags --abbrev=0") ||
+		null
+
+	const dirtyEnv = process.env.APP_GIT_DIRTY
+	const dirty =
+		(dirtyEnv ? dirtyEnv === "true" || dirtyEnv === "1" : false) ||
+		(!!sha && !!safeGit('test -n "$(git status --porcelain)" && echo dirty'))
+
+	const commitTime =
+		process.env.APP_COMMIT_TIME ||
+		process.env.GIT_COMMIT_TIME ||
+		safeGit("git show -s --format=%cI HEAD") ||
+		""
 	const buildTime = new Date().toISOString()
-	return {
+	const info = {
 		package: pkg.version as string,
 		sha,
 		tag,
@@ -37,6 +65,16 @@ function computeVersionInfo(mode: string) {
 		buildTime,
 		mode,
 	}
+	if (!info.sha) {
+		// eslint-disable-next-line no-console
+		console.warn(
+			"[version-plugin] No commit SHA detected. Set APP_GIT_SHA env var during build for reliable versioning.",
+		)
+	} else if (process.env.DEBUG_VERSION_INFO) {
+		// eslint-disable-next-line no-console
+		console.log("[version-plugin] info", info)
+	}
+	return info
 }
 
 function versionPlugin(): Plugin {
