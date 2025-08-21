@@ -66,12 +66,10 @@ function computeVersionInfo(mode: string) {
 		mode,
 	}
 	if (!info.sha) {
-		// eslint-disable-next-line no-console
 		console.warn(
 			"[version-plugin] No commit SHA detected. Set APP_GIT_SHA env var during build for reliable versioning.",
 		)
 	} else if (process.env.DEBUG_VERSION_INFO) {
-		// eslint-disable-next-line no-console
 		console.log("[version-plugin] info", info)
 	}
 	return info
