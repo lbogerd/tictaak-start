@@ -10,7 +10,6 @@
 		"dev": "vite dev --port 3000",
 		"dev:local-db": "DB_PROVIDER=pglite pnpm db:seed && pnpm dev",
 		"start": "node .output/server/index.mjs",
-		"prebuild": "bash scripts/git-sha-to-public.sh",
 		"build": "vite build",
 		"serve": "vite preview",
 		"test": "vitest run",
