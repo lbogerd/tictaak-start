@@ -9,6 +9,7 @@ export const env = createEnv({
 			.optional()
 			.default("development"),
 		DATABASE_URL: z.url(),
+		DB_PROVIDER: z.enum(["pg", "pglite"]).optional().default("pg"),
 		PRINTER_URL: z.url().optional(),
 	},
 

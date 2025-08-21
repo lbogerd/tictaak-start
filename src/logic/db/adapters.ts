@@ -3,7 +3,7 @@ import { drizzle as drizzlePg } from "drizzle-orm/node-postgres"
 import { drizzle as drizzlePGlite } from "drizzle-orm/pglite"
 import { migrate } from "drizzle-orm/pglite/migrator"
 import { Pool } from "pg"
-import * as schema from "./schema"
+import * as schema from "./schema.ts"
 
 /**
  * Create a Postgres-backed Drizzle DB instance (production / dev usage).

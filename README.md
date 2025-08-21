@@ -9,6 +9,18 @@ pnpm install
 pnpm start  
 ```
 
+## Database Providers
+
+By default the app connects to a real Postgres instance via `DATABASE_URL`.
+
+For rapid local development without Postgres you can use the in-memory PGlite provider:
+
+```bash
+DB_PROVIDER=pglite pnpm dev
+```
+
+When `DB_PROVIDER=pglite` is set, migrations are auto-applied at startup and all data is ephemeral (cleared on restart).
+
 # Building For Production
 
 To build this application for production:

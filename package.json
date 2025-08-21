@@ -8,6 +8,7 @@
 	},
 	"scripts": {
 		"dev": "vite dev --port 3000",
+		"dev:local-db": "DB_PROVIDER=pglite pnpm db:seed && pnpm dev",
 		"start": "node .output/server/index.mjs",
 		"prebuild": "bash scripts/git-sha-to-public.sh",
 		"build": "vite build",
@@ -17,7 +18,7 @@
 		"comp:add": "pnpm exec shadcn@latest add",
 		"db:generate": "pnpm exec drizzle-kit generate",
 		"db:push": "pnpm exec drizzle-kit push",
-		"db:seed": "node src/lib/seed.ts",
+		"db:seed": "node src/logic/db/seed.ts",
 		"db:reset": "pnpm run db:push && pnpm run db:seed",
 		"db:studio": "pnpm exec drizzle-kit studio"
 	},
