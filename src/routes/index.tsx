@@ -11,11 +11,18 @@ export const getCategoriesServerFn = createServerFn({
 	return categories
 })
 
+export const getAllTicketsServerFn = createServerFn({
+	method: "GET",
+}).handler(async () => {
+	const tickets = await getAll()
+	return tickets
+})
+
 export const Route = createFileRoute("/")({
 	component: App,
 	loader: async () => {
 		const categories = await getCategoriesServerFn()
-		const tasks = await getAll()
+		const tasks = await getAllTicketsServerFn()
 
 		return { categories, tasks }
 	},
