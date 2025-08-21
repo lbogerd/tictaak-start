@@ -55,7 +55,7 @@ export default function Version() {
 	if (!info) return null
 
 	const ident = info.sha || info.tag || info.buildTime
-	const short = `${info.package} - ${ident}${info.dirty ? "+" : ""}`
+	const short = `${info.package} - ${ident.slice(0, 6)}${info.dirty ? "+" : ""}`
 
 	// Build the detailed title by iterating over entries instead of concatenating a single string
 	const entries: [string, string][] = [
@@ -78,12 +78,12 @@ export default function Version() {
 						{short}
 					</button>
 				</PopoverTrigger>
-				<PopoverContent className="max-w-xs text-xs font-mono">
+				<PopoverContent className="max-w-xs font-mono text-xs">
 					<ul>
 						{entries.map(([key, value]) => (
 							<li
 								key={key}
-								className="flex justify-between py-1 border-b last:border-0"
+								className="flex justify-between border-b py-1 last:border-0"
 							>
 								<span className="italic">{key}</span>
 								<span className="font-semibold">{value}</span>
