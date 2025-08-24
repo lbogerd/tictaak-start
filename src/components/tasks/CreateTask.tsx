@@ -1,5 +1,14 @@
 import { addDays, isAfter, startOfDay } from "date-fns"
+import {
+	Calendar1,
+	CalendarClock,
+	CalendarOff,
+	CalendarSync,
+	Plus,
+	Tag,
+} from "lucide-react"
 import { useState } from "react"
+import { cn } from "~/logic/client/cn"
 import { useHotkey } from "../../hooks/useHotkey"
 import { Button } from "../ui/Button"
 import { Calendar } from "../ui/Calendar"
@@ -88,7 +97,7 @@ export function CreateTask({
 	}
 
 	return (
-		<Card className="px-4 sm:px-6">
+		<Card>
 			<form
 				onSubmit={(e) => {
 					e.preventDefault()
@@ -124,9 +133,19 @@ export function CreateTask({
 									setScheduledDate(getTomorrowDate())
 								}
 							}}
-							className="w-full sm:w-auto"
+							className="w-full border-secondary/50 text-secondary hover:bg-secondary/10 focus-visible:ring-secondary/20 sm:w-auto"
 						>
-							{showScheduling ? "Remove Schedule" : "Schedule Later"}
+							{showScheduling ? (
+								<>
+									<CalendarOff className="mr-2 inline h-4 w-4" />
+									<span>Remove Schedule</span>
+								</>
+							) : (
+								<>
+									<CalendarClock className="mr-2 inline h-4 w-4" />
+									<span>Schedule Later</span>
+								</>
+							)}
 						</Button>
 
 						<Button type="submit" className="w-full sm:w-auto" gradient>
@@ -145,13 +164,34 @@ export function CreateTask({
 									}
 								>
 									<SelectTrigger className="w-full sm:w-44">
-										<SelectValue placeholder="📅 Schedule Type" />
+										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="once">One-time</SelectItem>
-										<SelectItem value="recurring">Recurring</SelectItem>
+										<SelectItem value="once">
+											<Calendar1 /> One-time
+										</SelectItem>
+										<SelectItem value="recurring">
+											<CalendarSync /> Recurring
+										</SelectItem>
 									</SelectContent>
 								</Select>
+
+								{schedulingType === "recurring" && (
+									<Select
+										value={recurringType}
+										onValueChange={(value) =>
+											setRecurringType(value as "every-day" | "weekdays")
+										}
+									>
+										<SelectTrigger className="w-full sm:w-44">
+											<SelectValue placeholder="🔄 Repeat" />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="every-day">Every day</SelectItem>
+											<SelectItem value="weekdays">Specific days</SelectItem>
+										</SelectContent>
+									</Select>
+								)}
 
 								<Popover>
 									<PopoverTrigger asChild>
@@ -179,23 +219,6 @@ export function CreateTask({
 										/>
 									</PopoverContent>
 								</Popover>
-
-								{schedulingType === "recurring" && (
-									<Select
-										value={recurringType}
-										onValueChange={(value) =>
-											setRecurringType(value as "every-day" | "weekdays")
-										}
-									>
-										<SelectTrigger className="w-full sm:w-44">
-											<SelectValue placeholder="🔄 Repeat" />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="every-day">Every day</SelectItem>
-											<SelectItem value="weekdays">Specific days</SelectItem>
-										</SelectContent>
-									</Select>
-								)}
 							</div>
 
 							{/* Weekday selector - separate row when recurring + specific days */}
@@ -247,9 +270,13 @@ function WeekdaySelector({
 				<Button
 					key={day.id}
 					type="button"
-					variant={selectedDays.includes(day.id) ? "accent" : "outline"}
+					variant="outline"
 					size="sm"
-					className="h-8 min-w-12 rounded-sm px-2 font-normal capitalize"
+					className={cn(
+						"h-8 min-w-12 rounded-sm px-2 font-normal capitalize",
+						selectedDays.includes(day.id) &&
+							"border-accent/50 bg-accent/10 text-accent hover:bg-accent/20 focus-visible:ring-accent/20",
+					)}
 					onClick={() => toggleDay(day.id)}
 					title={day.full}
 				>
@@ -340,7 +367,12 @@ function CategoryDropdown({
 		>
 			<SelectTrigger className="w-full sm:w-44">
 				<SelectValue
-					placeholder="🏷️ Category"
+					placeholder={
+						<>
+							<Tag className="fill-amber-100 stroke-amber-300" />
+							<span>Category</span>
+						</>
+					}
 					className="text-muted-foreground"
 				/>
 			</SelectTrigger>
@@ -358,7 +390,7 @@ function CategoryDropdown({
 					value="add-new"
 					className="text-blue-600 focus:bg-blue-100 focus:text-blue-600"
 				>
-					➕ Add new category...
+					<Plus className="stroke-blue-600" /> Add new category...
 				</SelectItem>
 			</SelectContent>
 		</Select>
