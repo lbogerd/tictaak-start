@@ -7,7 +7,7 @@
 		"node": ">=24.6.0"
 	},
 	"scripts": {
-		"dev": "vite dev --port 3000",
+		"dev": "vite dev",
 		"dev:local-db": "DB_PROVIDER=pglite pnpm db:seed && pnpm dev",
 		"start": "node .output/server/index.mjs",
 		"build": "vite build",
