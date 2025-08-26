@@ -1,10 +1,10 @@
-import tailwindcss from "@tailwindcss/vite"
-import { tanstackStart } from "@tanstack/react-start/plugin/vite"
-import viteReact from '@vitejs/plugin-react'
 import { execSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import tailwindcss from "@tailwindcss/vite"
+import { tanstackStart } from "@tanstack/react-start/plugin/vite"
+import viteReact from "@vitejs/plugin-react"
 import { defineConfig, type Plugin } from "vite"
 import viteTsConfigPaths from "vite-tsconfig-paths"
 
@@ -121,7 +121,7 @@ function versionPlugin(): Plugin {
 
 const config = defineConfig({
 	server: {
-		port: 3000
+		port: 3000,
 	},
 	plugins: [
 		// path aliases
