@@ -71,12 +71,9 @@ export default function Version() {
 		<div className="text-center text-gray-500 text-xs">
 			<Popover>
 				<PopoverTrigger>
-					<button
-						type="button"
-						className="m-0 bg-transparent p-0 text-gray-500 text-xs underline-offset-2 hover:underline"
-					>
+					<span className="m-0 bg-transparent p-0 text-gray-500 text-xs underline-offset-2 hover:underline">
 						{short}
-					</button>
+					</span>
 				</PopoverTrigger>
 				<PopoverContent className="max-w-xs font-mono text-xs">
 					<ul>
