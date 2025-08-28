@@ -1,5 +1,5 @@
-import { startOfDay } from "date-fns"
 import { and, eq, gt, isNull, lt, lte } from "drizzle-orm"
+import { todayStart } from "~/logic/dates/taskDates"
 import { db } from "~/logic/db/db"
 import { type NewTask, tasks } from "~/logic/db/schema"
 
@@ -72,7 +72,7 @@ export async function getByCategoryId(
  * @returns All upcoming tickets.
  */
 export async function getUpcoming(date?: Date) {
-	const startDate = startOfDay(date ?? new Date())
+	const startDate = todayStart(date)
 	return await db.query.tasks.findMany({
 		where: and(
 			gt(tasks.nextPrintDate, startDate),
@@ -88,7 +88,7 @@ export async function getUpcoming(date?: Date) {
  * @returns All due tickets.
  */
 export async function getDue(date?: Date) {
-	const dueDate = startOfDay(date ?? new Date())
+	const dueDate = todayStart(date)
 
 	return await db.query.tasks.findMany({
 		where: and(

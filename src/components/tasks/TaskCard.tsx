@@ -1,4 +1,4 @@
-import { format, isAfter, isBefore, isEqual, startOfDay } from "date-fns"
+import { format } from "date-fns"
 import {
 	Archive,
 	CalendarClock,
@@ -9,6 +9,7 @@ import {
 	Tags,
 } from "lucide-react"
 import { cn } from "~/logic/client/cn"
+import { getTaskPrintStatus, recursOnLabels } from "~/logic/dates/taskDates"
 import type { Task } from "~/logic/db/schema"
 import { Badge } from "../ui/Badge"
 import { Button } from "../ui/Button"
@@ -32,35 +33,10 @@ export function TaskCard({
 	onEdit,
 }: TaskCardProps) {
 	const isArchived = Boolean(task.archivedAt)
+	const { nextPrintDate, isDue, isUpcoming, isPrintedForCurrentCycle } =
+		getTaskPrintStatus(task)
 
-	const today = startOfDay(new Date())
-	const nextPrintDate = task.nextPrintDate
-		? startOfDay(new Date(task.nextPrintDate))
-		: undefined
-	const lastPrintedAt = task.lastPrintedAt
-		? new Date(task.lastPrintedAt)
-		: undefined
-
-	// Mirror service.getDue logic for UX state:
-	// due when nextPrintDate <= today AND lastPrintedAt < nextPrintDate
-	const isDue = Boolean(
-		nextPrintDate &&
-			(isBefore(nextPrintDate, today) || isEqual(nextPrintDate, today)) &&
-			(!lastPrintedAt || isBefore(lastPrintedAt, nextPrintDate)),
-	)
-
-	const isUpcoming = Boolean(
-		nextPrintDate && isAfter(nextPrintDate, today) && !isDue,
-	)
-
-	const isPrintedForCurrentCycle = Boolean(
-		nextPrintDate && lastPrintedAt && !isBefore(lastPrintedAt, nextPrintDate),
-	)
-
-	const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-	const recursOn = (task.recursOnDays ?? [])
-		.filter((d): d is number => typeof d === "number")
-		.map((d) => dayNames[(d + 7) % 7])
+	const recursOn = recursOnLabels(task.recursOnDays ?? [])
 
 	return (
 		<Card className={className}>
