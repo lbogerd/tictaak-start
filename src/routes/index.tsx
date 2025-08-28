@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
 import { CreateTask } from "~/components/tasks/CreateTask"
+import { TaskCard } from "~/components/tasks/TaskCard"
 import { db } from "~/logic/db/db"
 import { getAll } from "~/logic/services/task.service"
 
@@ -45,9 +46,16 @@ function App() {
 				}}
 			/>
 
-			<ul>
+			<ul className="mt-8 flex flex-col gap-4">
 				{tasks.map((task) => (
-					<li key={task.id}>{task.title}</li>
+					<li key={task.id}>
+						<TaskCard
+							task={task}
+							onPrint={() => console.log("Printing task:", task)}
+							onArchive={() => console.log("Archiving task:", task)}
+							onEdit={() => console.log("Editing task:", task)}
+						/>
+					</li>
 				))}
 			</ul>
 		</div>
