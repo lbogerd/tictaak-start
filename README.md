@@ -13,6 +13,52 @@ pnpm start
 
 By default the app connects to a real Postgres instance via `DATABASE_URL`.
 
+## Local Postgres (Docker)
+
+Build a local Postgres image that initializes schema from the SQL in `drizzle/*.sql`:
+
+```bash
+docker build -f Dockerfile.db -t tictaak-db .
+```
+
+Run the DB container (persists data in a named Docker volume):
+
+```bash
+docker run --name tictaak-db \
+  -e POSTGRES_DB=tictaak \
+  -e POSTGRES_USER=tictaak \
+  -e POSTGRES_PASSWORD=tictaak \
+  -p 5432:5432 \
+  -v tictaak-db-data:/var/lib/postgresql/data \
+  tictaak-db
+```
+
+The corresponding connection string is:
+
+```bash
+DATABASE_URL=postgresql://tictaak:tictaak@localhost:5432/tictaak
+```
+
+Once the DB is running:
+
+```bash
+pnpm db:seed
+pnpm dev
+```
+
+To stop the DB:
+
+```bash
+docker stop tictaak-db
+```
+
+To reset the DB completely (drops all persisted data):
+
+```bash
+docker rm -f tictaak-db
+docker volume rm tictaak-db-data
+```
+
 For rapid local development without Postgres you can use the in-memory PGlite provider:
 
 ```bash

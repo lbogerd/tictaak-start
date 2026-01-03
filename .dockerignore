@@ -1,0 +1,7 @@
+node_modules
+.output
+dist
+.vite
+.DS_Store
+.git
+pnpm-store

@@ -1,0 +1,9 @@
+# Postgres image for local development.
+# Builds a DB container that auto-initializes schema from drizzle SQL on first start.
+
+FROM postgres:16-alpine
+
+# drizzle-kit generated SQL migrations (run only when the data directory is empty)
+COPY drizzle/*.sql /docker-entrypoint-initdb.d/
+
+EXPOSE 5432

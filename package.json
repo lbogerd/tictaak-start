@@ -9,6 +9,8 @@
 	"scripts": {
 		"dev": "vite dev",
 		"dev:local-db": "DB_PROVIDER=pglite pnpm db:seed && pnpm dev",
+		"db:up": "bash scripts/db-up.sh",
+		"db:down": "bash scripts/db-down.sh",
 		"start": "node .output/server/index.mjs",
 		"build": "vite build",
 		"serve": "vite preview",

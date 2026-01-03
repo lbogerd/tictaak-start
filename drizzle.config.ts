@@ -1,8 +1,8 @@
 import { defineConfig } from "drizzle-kit"
-import { env } from "~/env"
+import { env } from "./src/env.ts"
 
 export default defineConfig({
-	schema: "./src/lib/schema.ts",
+	schema: "./src/logic/db/schema.ts",
 	out: "./drizzle",
 	dialect: "postgresql",
 	dbCredentials: {
