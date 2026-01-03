@@ -170,7 +170,7 @@ export function CreateTask({
 
 					{/* Collapsible scheduling controls */}
 					{showScheduling && (
-						<div className="animate-in fade-in slide-in-from-top-2 flex flex-col gap-4 rounded-2xl bg-orange-50/30 p-4 duration-300">
+						<div className="fade-in slide-in-from-top-2 flex animate-in flex-col gap-4 rounded-2xl bg-orange-50/30 p-4 duration-300">
 							<div className="flex flex-col gap-4 sm:flex-row sm:items-center">
 								<div className="flex items-center gap-2 text-orange-700 text-sm sm:mr-2">
 									<CalendarSync className="h-4 w-4" />
@@ -251,7 +251,7 @@ export function CreateTask({
 							{/* Weekday selector - separate row when recurring + specific days */}
 							{schedulingType === "recurring" &&
 								recurringType === "weekdays" && (
-									<div className="flex w-full animate-in fade-in slide-in-from-left-2 duration-300">
+									<div className="fade-in slide-in-from-left-2 flex w-full animate-in duration-300">
 										<WeekdaySelector
 											selectedDays={selectedWeekdays}
 											onChange={setSelectedWeekdays}

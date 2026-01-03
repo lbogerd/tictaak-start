@@ -41,13 +41,13 @@ export function TaskCard({
 	return (
 		<Card
 			className={cn(
-				"relative overflow-hidden border-none bg-white shadow-xl shadow-orange-900/5 transition-all hover:shadow-2xl hover:shadow-orange-900/10",
+				"relative overflow-hidden border-none bg-white shadow-orange-900/5 shadow-xl transition-all hover:shadow-2xl hover:shadow-orange-900/10",
 				className,
 			)}
 		>
 			{/* Ticket "punches" */}
-			<div className="absolute -left-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-orange-50" />
-			<div className="absolute -right-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-orange-50" />
+			<div className="-left-3 -translate-y-1/2 absolute top-1/2 h-6 w-6 rounded-full bg-orange-50" />
+			<div className="-right-3 -translate-y-1/2 absolute top-1/2 h-6 w-6 rounded-full bg-orange-50" />
 
 			<CardHeader className="gap-3 pb-4">
 				<CardTitle className="flex items-start justify-between gap-3">
@@ -127,7 +127,7 @@ export function TaskCard({
 			</CardHeader>
 
 			{/* Perforated line */}
-			<div className="relative h-px w-full border-t-2 border-dashed border-orange-100 px-6" />
+			<div className="relative h-px w-full border-orange-100 border-t-2 border-dashed px-6" />
 
 			<CardContent className="flex flex-col gap-3 pt-4">
 				<div className="grid gap-4 text-sm sm:grid-cols-2">
@@ -158,7 +158,7 @@ export function TaskCard({
 				</div>
 
 				{recursOn.length > 0 && (
-					<div className="flex flex-wrap items-center gap-2 border-t border-orange-50 pt-3">
+					<div className="flex flex-wrap items-center gap-2 border-orange-50 border-t pt-3">
 						<span className="text-muted-foreground text-xs">Repeats:</span>
 						<div className="flex flex-wrap gap-1.5">
 							{recursOn.map((d) => (

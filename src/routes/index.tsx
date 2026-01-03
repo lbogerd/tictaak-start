@@ -60,7 +60,7 @@ function App() {
 			</div>
 
 			<div className="space-y-6">
-				<div className="flex items-center justify-between border-b border-orange-200/50 pb-4">
+				<div className="flex items-center justify-between border-orange-200/50 border-b pb-4">
 					<h3 className="font-semibold text-xl">Your Tasks</h3>
 					<span className="rounded-full bg-orange-100 px-3 py-1 font-medium text-orange-700 text-sm">
 						{tasks.length} {tasks.length === 1 ? "task" : "tasks"}
@@ -81,7 +81,7 @@ function App() {
 						))}
 					</ul>
 				) : (
-					<div className="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-orange-200 bg-white/50 py-20 text-center">
+					<div className="flex flex-col items-center justify-center rounded-3xl border-2 border-orange-200 border-dashed bg-white/50 py-20 text-center">
 						<div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-100 text-orange-500">
 							<Ticket className="h-8 w-8" />
 						</div>
