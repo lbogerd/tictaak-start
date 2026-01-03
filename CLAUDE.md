@@ -1,7 +1,9 @@
 # Rules for Agents and LLMs like Claude and Copilot
+
 These rules are designed to help agents keep on track. Do not deviate from these rules.
 
 ## Technical Guidelines
+
 The most important technical guidelines for this project are as follows. Read these carefully and follow them strictly.
 
 ### Technical Dos
