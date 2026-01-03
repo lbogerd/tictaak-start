@@ -1,4 +1,4 @@
-import { addDays, isAfter, startOfDay } from "date-fns"
+import { addDays, format, isAfter, startOfDay } from "date-fns"
 import {
 	Calendar1,
 	CalendarClock,
@@ -97,81 +97,107 @@ export function CreateTask({
 	}
 
 	return (
-		<Card>
+		<Card className="overflow-hidden border-none bg-white p-1 shadow-2xl shadow-orange-900/10">
 			<form
 				onSubmit={(e) => {
 					e.preventDefault()
 					handleSubmit()
 				}}
+				className="p-4 sm:p-6"
 			>
-				<div className="flex flex-col gap-4">
+				<div className="flex flex-col gap-6">
 					{/* Main task input and category row */}
-					<div className="flex flex-col gap-4 sm:flex-row">
-						<Input
-							type="text"
-							placeholder="What needs to be done?"
-							className="w-full sm:flex-1"
-							value={taskText}
-							onChange={(e) => setTaskText(e.target.value)}
-						/>
-
-						<div className="w-full sm:w-auto">
-							<CategoryDropdown
-								categories={categories}
-								value={selectedCategory}
-								onChange={setSelectedCategory}
+					<div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+						<div className="relative flex-1">
+							<Input
+								type="text"
+								placeholder="What needs to be done?"
+								className="h-12 w-full border-none bg-orange-50/50 px-4 text-lg ring-offset-transparent focus-visible:bg-orange-50 focus-visible:ring-2 focus-visible:ring-orange-200"
+								value={taskText}
+								onChange={(e) => setTaskText(e.target.value)}
 							/>
 						</div>
 
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => {
-								setShowScheduling(!showScheduling)
-								// Set default to tomorrow when enabling scheduling
-								if (!showScheduling && !scheduledDate) {
-									setScheduledDate(getTomorrowDate())
-								}
-							}}
-							className="w-full border-secondary/50 text-secondary hover:bg-secondary/10 focus-visible:ring-secondary/20 sm:w-auto"
-						>
-							{showScheduling ? (
-								<>
-									<CalendarOff className="mr-2 inline h-4 w-4" />
-									<span>Remove Schedule</span>
-								</>
-							) : (
-								<>
-									<CalendarClock className="mr-2 inline h-4 w-4" />
-									<span>Schedule Later</span>
-								</>
-							)}
-						</Button>
+						<div className="flex flex-wrap items-center gap-3">
+							<div className="w-full sm:w-auto">
+								<CategoryDropdown
+									categories={categories}
+									value={selectedCategory}
+									onChange={setSelectedCategory}
+								/>
+							</div>
 
-						<Button type="submit" className="w-full sm:w-auto" gradient>
-							{showScheduling && scheduledDate ? "Plan Task" : "Create Task"}
-						</Button>
+							<Button
+								type="button"
+								variant="ghost"
+								onClick={() => {
+									setShowScheduling(!showScheduling)
+									// Set default to tomorrow when enabling scheduling
+									if (!showScheduling && !scheduledDate) {
+										setScheduledDate(getTomorrowDate())
+									}
+								}}
+								className={cn(
+									"h-10 w-full border-none sm:w-auto",
+									showScheduling
+										? "bg-orange-100 text-orange-700 hover:bg-orange-200"
+										: "text-neutral-500 hover:bg-orange-50 hover:text-orange-600",
+								)}
+							>
+								{showScheduling ? (
+									<>
+										<CalendarOff className="mr-2 h-4 w-4" />
+										<span>Scheduled</span>
+									</>
+								) : (
+									<>
+										<CalendarClock className="mr-2 h-4 w-4" />
+										<span>Schedule</span>
+									</>
+								)}
+							</Button>
+
+							<Button
+								type="submit"
+								className="h-10 w-full px-8 font-bold sm:w-auto"
+								gradient
+								disabled={!taskText.trim()}
+							>
+								{showScheduling && scheduledDate ? "Plan Task" : "Create Task"}
+							</Button>
+						</div>
 					</div>
 
 					{/* Collapsible scheduling controls */}
 					{showScheduling && (
-						<div className="flex flex-col gap-4 border-t pt-4">
-							<div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap">
+						<div className="animate-in fade-in slide-in-from-top-2 flex flex-col gap-4 rounded-2xl bg-orange-50/30 p-4 duration-300">
+							<div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+								<div className="flex items-center gap-2 text-orange-700 text-sm sm:mr-2">
+									<CalendarSync className="h-4 w-4" />
+									<span className="font-medium">Schedule Settings</span>
+								</div>
+
 								<Select
 									value={schedulingType}
 									onValueChange={(value) =>
 										setSchedulingType(value as "once" | "recurring")
 									}
 								>
-									<SelectTrigger className="w-full sm:w-44">
+									<SelectTrigger className="h-9 w-full border-orange-100 bg-white sm:w-40">
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
 										<SelectItem value="once">
-											<Calendar1 /> One-time
+											<div className="flex items-center gap-2">
+												<Calendar1 className="h-4 w-4" />
+												<span>One-time</span>
+											</div>
 										</SelectItem>
 										<SelectItem value="recurring">
-											<CalendarSync /> Recurring
+											<div className="flex items-center gap-2">
+												<CalendarSync className="h-4 w-4" />
+												<span>Recurring</span>
+											</div>
 										</SelectItem>
 									</SelectContent>
 								</Select>
@@ -183,7 +209,7 @@ export function CreateTask({
 											setRecurringType(value as "every-day" | "weekdays")
 										}
 									>
-										<SelectTrigger className="w-full sm:w-44">
+										<SelectTrigger className="h-9 w-full border-orange-100 bg-white sm:w-40">
 											<SelectValue placeholder="🔄 Repeat" />
 										</SelectTrigger>
 										<SelectContent>
@@ -197,14 +223,15 @@ export function CreateTask({
 									<PopoverTrigger asChild>
 										<Button
 											variant="outline"
-											className="w-full justify-start text-left font-normal sm:flex-1"
+											className="h-9 w-full justify-start border-orange-100 bg-white text-left font-normal sm:flex-1"
 										>
+											<Calendar1 className="mr-2 h-4 w-4 text-orange-400" />
 											{scheduledDate
-												? scheduledDate.toLocaleDateString()
-												: "📅 Pick a date"}
+												? format(scheduledDate, "PPP")
+												: "Pick a date"}
 										</Button>
 									</PopoverTrigger>
-									<PopoverContent className="w-auto p-0">
+									<PopoverContent className="w-auto p-0" align="start">
 										<Calendar
 											mode="single"
 											selected={scheduledDate}
@@ -224,7 +251,7 @@ export function CreateTask({
 							{/* Weekday selector - separate row when recurring + specific days */}
 							{schedulingType === "recurring" &&
 								recurringType === "weekdays" && (
-									<div className="flex w-full">
+									<div className="flex w-full animate-in fade-in slide-in-from-left-2 duration-300">
 										<WeekdaySelector
 											selectedDays={selectedWeekdays}
 											onChange={setSelectedWeekdays}
@@ -247,13 +274,13 @@ function WeekdaySelector({
 	onChange: (days: string[]) => void
 }) {
 	const weekdays = [
-		{ id: "mon", name: "mon", full: "Monday" },
-		{ id: "tue", name: "tue", full: "Tuesday" },
-		{ id: "wed", name: "wed", full: "Wednesday" },
-		{ id: "thu", name: "thu", full: "Thursday" },
-		{ id: "fri", name: "fri", full: "Friday" },
-		{ id: "sat", name: "sat", full: "Saturday" },
-		{ id: "sun", name: "sun", full: "Sunday" },
+		{ id: "mon", name: "M", full: "Monday" },
+		{ id: "tue", name: "T", full: "Tuesday" },
+		{ id: "wed", name: "W", full: "Wednesday" },
+		{ id: "thu", name: "T", full: "Thursday" },
+		{ id: "fri", name: "F", full: "Friday" },
+		{ id: "sat", name: "S", full: "Saturday" },
+		{ id: "sun", name: "S", full: "Sunday" },
 	]
 
 	const toggleDay = (dayId: string) => {
@@ -273,9 +300,10 @@ function WeekdaySelector({
 					variant="outline"
 					size="sm"
 					className={cn(
-						"h-8 min-w-12 rounded-sm px-2 font-normal capitalize",
-						selectedDays.includes(day.id) &&
-							"border-accent/50 bg-accent/10 text-accent hover:bg-accent/20 focus-visible:ring-accent/20",
+						"h-10 w-10 rounded-full border-orange-100 p-0 font-medium transition-all",
+						selectedDays.includes(day.id)
+							? "bg-orange-500 text-white hover:bg-orange-600"
+							: "bg-white text-neutral-600 hover:bg-orange-50 hover:text-orange-600",
 					)}
 					onClick={() => toggleDay(day.id)}
 					title={day.full}
@@ -365,32 +393,38 @@ function CategoryDropdown({
 				}
 			}}
 		>
-			<SelectTrigger className="w-full sm:w-44">
+			<SelectTrigger className="h-10 w-full border-none bg-orange-50/50 ring-offset-transparent focus:ring-2 focus:ring-orange-200 sm:w-44">
 				<SelectValue
 					placeholder={
-						<>
-							<Tag className="fill-amber-100 stroke-amber-300" />
+						<div className="flex items-center gap-2 text-neutral-500">
+							<Tag className="h-4 w-4 text-orange-400" />
 							<span>Category</span>
-						</>
+						</div>
 					}
-					className="text-muted-foreground"
 				/>
 			</SelectTrigger>
 
-			<SelectContent>
+			<SelectContent className="rounded-xl border-orange-100 shadow-xl">
 				{categories.map((category) => (
-					<SelectItem key={category.id} value={category.id}>
+					<SelectItem
+						key={category.id}
+						value={category.id}
+						className="rounded-lg focus:bg-orange-50 focus:text-orange-700"
+					>
 						{category.name}
 					</SelectItem>
 				))}
 
-				<Separator className="m-0.5" />
+				<Separator className="my-1 bg-orange-100" />
 
 				<SelectItem
 					value="add-new"
-					className="text-blue-600 focus:bg-blue-100 focus:text-blue-600"
+					className="rounded-lg text-orange-600 focus:bg-orange-100 focus:text-orange-700"
 				>
-					<Plus className="stroke-blue-600" /> Add new category...
+					<div className="flex items-center gap-2">
+						<Plus className="h-4 w-4" />
+						<span>Add new category...</span>
+					</div>
 				</SelectItem>
 			</SelectContent>
 		</Select>

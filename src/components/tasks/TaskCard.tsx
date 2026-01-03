@@ -39,10 +39,19 @@ export function TaskCard({
 	const recursOn = recursOnLabels(task.recursOnDays ?? [])
 
 	return (
-		<Card className={className}>
-			<CardHeader className="gap-3">
+		<Card
+			className={cn(
+				"relative overflow-hidden border-none bg-white shadow-xl shadow-orange-900/5 transition-all hover:shadow-2xl hover:shadow-orange-900/10",
+				className,
+			)}
+		>
+			{/* Ticket "punches" */}
+			<div className="absolute -left-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-orange-50" />
+			<div className="absolute -right-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-orange-50" />
+
+			<CardHeader className="gap-3 pb-4">
 				<CardTitle className="flex items-start justify-between gap-3">
-					<span className="text-base sm:text-lg">{task.title}</span>
+					<span className="font-bold text-base sm:text-lg">{task.title}</span>
 					<div className="flex items-center gap-2">
 						{onEdit && (
 							<Button
@@ -63,8 +72,9 @@ export function TaskCard({
 								onClick={() => onPrint(task)}
 								title="Print ticket"
 								gradient
+								className="h-9 px-4"
 							>
-								<Printer /> Print
+								<Printer className="mr-2 h-4 w-4" /> Print
 							</Button>
 						)}
 						{isArchived
@@ -75,21 +85,21 @@ export function TaskCard({
 										size="sm"
 										onClick={() => onUnarchive(task)}
 										title="Unarchive"
-										className="text-emerald-600 hover:bg-emerald-100"
+										className="h-9 border-emerald-200 text-emerald-600 hover:bg-emerald-50"
 									>
-										<RotateCcw /> Unarchive
+										<RotateCcw className="mr-2 h-4 w-4" /> Unarchive
 									</Button>
 								)
 							: onArchive && (
 									<Button
 										type="button"
-										variant="outline"
+										variant="ghost"
 										size="icon"
 										onClick={() => onArchive(task)}
 										title="Archive"
-										className="border-0 text-rose-600 hover:bg-rose-100"
+										className="h-9 w-9 text-rose-400 hover:bg-rose-50 hover:text-rose-600"
 									>
-										<Archive className="opacity-70" />
+										<Archive className="h-4 w-4 opacity-70" />
 									</Button>
 								)}
 					</div>
@@ -116,13 +126,20 @@ export function TaskCard({
 				</div>
 			</CardHeader>
 
-			<CardContent className="flex flex-col gap-3">
-				<div className="grid gap-2 text-sm sm:grid-cols-2">
+			{/* Perforated line */}
+			<div className="relative h-px w-full border-t-2 border-dashed border-orange-100 px-6" />
+
+			<CardContent className="flex flex-col gap-3 pt-4">
+				<div className="grid gap-4 text-sm sm:grid-cols-2">
 					{nextPrintDate && (
 						<DetailRow
 							className="md:justify-start"
 							label="Next print"
-							value={format(nextPrintDate, "EEE, MMM d, yyyy")}
+							value={
+								<span className="font-medium text-neutral-900">
+									{format(nextPrintDate, "EEE, MMM d, yyyy")}
+								</span>
+							}
 						/>
 					)}
 
@@ -130,22 +147,26 @@ export function TaskCard({
 						label="Category"
 						className="md:justify-end"
 						value={
-							<span className="inline-flex items-center gap-1 text-muted-foreground">
-								<Tags className="size-3.5 opacity-70" />
-								<code className="rounded bg-muted/40 px-1.5 py-0.5 text-[11px]">
+							<span className="inline-flex items-center gap-1.5">
+								<Tags className="size-3.5 text-orange-400" />
+								<span className="font-medium text-neutral-900">
 									{task.categoryId}
-								</code>
+								</span>
 							</span>
 						}
 					/>
 				</div>
 
 				{recursOn.length > 0 && (
-					<div className="flex flex-wrap items-center gap-2">
+					<div className="flex flex-wrap items-center gap-2 border-t border-orange-50 pt-3">
 						<span className="text-muted-foreground text-xs">Repeats:</span>
 						<div className="flex flex-wrap gap-1.5">
 							{recursOn.map((d) => (
-								<Badge key={d} variant="secondary" className="px-2 py-0.5">
+								<Badge
+									key={d}
+									variant="secondary"
+									className="bg-orange-50 px-2 py-0.5 text-orange-700 hover:bg-orange-100"
+								>
 									{d}
 								</Badge>
 							))}
