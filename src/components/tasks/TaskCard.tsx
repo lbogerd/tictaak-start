@@ -130,10 +130,9 @@ export function TaskCard({
 			<div className="relative h-px w-full border-orange-100 border-t-2 border-dashed px-6" />
 
 			<CardContent className="flex flex-col gap-3 pt-4">
-				<div className="grid gap-4 text-sm sm:grid-cols-2">
+				<div className="flex flex-col gap-4 text-sm sm:flex-row sm:items-center sm:justify-between">
 					{nextPrintDate && (
 						<DetailRow
-							className="md:justify-start"
 							label="Next print"
 							value={
 								<span className="font-medium text-neutral-900">
@@ -145,7 +144,7 @@ export function TaskCard({
 
 					<DetailRow
 						label="Category"
-						className="md:justify-end"
+						className="justify-end sm:ml-auto"
 						value={
 							<span className="inline-flex items-center gap-1.5">
 								<Tags className="size-3.5 text-orange-400" />
