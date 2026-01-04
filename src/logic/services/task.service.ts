@@ -113,3 +113,33 @@ export async function getDue(date?: Date) {
 		},
 	})
 }
+
+/**
+ * Archive a task by ID
+ * @param id - The ID of the task to archive
+ * @returns The archived task.
+ */
+export async function archive(id: string) {
+	return await db
+		.update(tasks)
+		.set({ archivedAt: new Date() })
+		.where(eq(tasks.id, id))
+		.returning()
+}
+
+/**
+ * Get all archived tickets
+ * @returns All archived tickets.
+ */
+export async function getAllArchived() {
+	return await db.query.tasks.findMany({
+		where: (task) => {
+			const notNull: any = task.archivedAt
+			return notNull
+		},
+		with: {
+			category: true,
+		},
+		orderBy: (tasks, { desc }) => [desc(tasks.archivedAt)],
+	})
+}

@@ -7,7 +7,7 @@ import { TaskCard } from "~/components/tasks/TaskCard"
 import { toStartOfDay } from "~/logic/dates/taskDates"
 import { db } from "~/logic/db/db"
 import { categories } from "~/logic/db/schema"
-import { create, getAll } from "~/logic/services/task.service"
+import { archive, create, getAll } from "~/logic/services/task.service"
 
 export const getCategoriesServerFn = createServerFn({
 	method: "GET",
@@ -47,6 +47,14 @@ export const createCategoryServerFn = createServerFn({
 	.handler(async ({ data }) => {
 		const result = await db.insert(categories).values(data).returning()
 		return result[0]
+	})
+
+export const archiveTaskServerFn = createServerFn({
+	method: "POST",
+})
+	.validator((data: unknown) => z.object({ id: z.string() }).parse(data))
+	.handler(async ({ data }) => {
+		return await archive(data.id)
 	})
 
 export const Route = createFileRoute("/")({
@@ -140,7 +148,10 @@ function App() {
 								<TaskCard
 									task={task}
 									onPrint={() => console.log("Printing task:", task)}
-									onArchive={() => console.log("Archiving task:", task)}
+									onArchive={async (task) => {
+										await archiveTaskServerFn({ data: { id: task.id } })
+										router.invalidate()
+									}}
 									onEdit={() => console.log("Editing task:", task)}
 								/>
 							</li>
