@@ -126,20 +126,3 @@ export async function archive(id: string) {
 		.where(eq(tasks.id, id))
 		.returning()
 }
-
-/**
- * Get all archived tickets
- * @returns All archived tickets.
- */
-export async function getAllArchived() {
-	return await db.query.tasks.findMany({
-		where: (task) => {
-			const notNull: any = task.archivedAt
-			return notNull
-		},
-		with: {
-			category: true,
-		},
-		orderBy: (tasks, { desc }) => [desc(tasks.archivedAt)],
-	})
-}

@@ -106,7 +106,13 @@ export function TaskCard({
 				</CardTitle>
 
 				<div className="flex flex-wrap items-center gap-2 text-sm">
-					{isArchived && <StatusBadge variant="secondary" text="Archived" />}
+					{isArchived && (
+						<StatusBadge
+							variant="secondary"
+							text="Archived"
+							className="bg-neutral-200 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-200"
+						/>
+					)}
 					{nextPrintDate && !isArchived && isDue && (
 						<StatusBadge
 							icon={<CalendarClock className="size-4" />}
@@ -182,20 +188,21 @@ function StatusBadge({
 	icon,
 	variant,
 	emphasize,
+	className,
 }: {
 	text: string
 	icon?: React.ReactNode
 	variant?: React.ComponentProps<typeof Badge>["variant"]
 	emphasize?: boolean
+	className?: string
 }) {
 	return (
 		<Badge
 			variant={variant ?? (emphasize ? "default" : "outline")}
 			className={cn(
 				"py-1",
-				emphasize
-					? "font-bold hover:bg-inherit"
-					: "font-normal text-muted-foreground",
+				emphasize ? "font-bold" : "font-normal text-muted-foreground",
+				className,
 			)}
 		>
 			<span className="inline-flex items-center gap-1.5">

@@ -109,18 +109,18 @@ export function CreateTask({
 			>
 				<div className="flex flex-col gap-6">
 					{/* Main task input and category row */}
-					<div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+					<div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
 						<div className="relative flex-1">
 							<Input
 								type="text"
 								placeholder="What needs to be done?"
-								className="h-12 w-full border-none bg-orange-50/50 px-4 text-lg ring-offset-transparent focus-visible:bg-orange-50 focus-visible:ring-2 focus-visible:ring-orange-200"
+								className="h-12 w-full border border-orange-200/60 bg-white px-4 shadow-sm ring-offset-transparent focus-visible:border-orange-300 focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-orange-200"
 								value={taskText}
 								onChange={(e) => setTaskText(e.target.value)}
 							/>
 						</div>
 
-						<div className="flex flex-wrap items-center gap-3">
+						<div className="flex flex-wrap items-stretch gap-3">
 							<div className="w-full sm:w-auto">
 								<CategoryDropdown
 									categories={categories}
@@ -141,7 +141,7 @@ export function CreateTask({
 									}
 								}}
 								className={cn(
-									"h-10 w-full border-none sm:w-auto",
+									"h-12 w-full border-none sm:w-auto",
 									showScheduling
 										? "bg-orange-100 text-orange-700 hover:bg-orange-200"
 										: "text-neutral-500 hover:bg-orange-50 hover:text-orange-600",
@@ -162,7 +162,7 @@ export function CreateTask({
 
 							<Button
 								type="submit"
-								className="h-10 w-full px-8 font-bold sm:w-auto"
+								className="h-12 w-full px-8 font-bold sm:w-auto"
 								gradient
 								disabled={!taskText.trim() || !selectedCategory}
 							>
@@ -186,7 +186,10 @@ export function CreateTask({
 										setSchedulingType(value as "once" | "recurring")
 									}
 								>
-									<SelectTrigger className="h-9 w-full border-orange-100 bg-white sm:w-40">
+									<SelectTrigger
+										size="lg"
+										className="w-full border-orange-200 bg-white shadow-sm sm:w-40"
+									>
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
@@ -212,7 +215,10 @@ export function CreateTask({
 											setRecurringType(value as "every-day" | "weekdays")
 										}
 									>
-										<SelectTrigger className="h-9 w-full border-orange-100 bg-white sm:w-40">
+										<SelectTrigger
+											size="lg"
+											className="w-full border-orange-200 bg-white shadow-sm sm:w-40"
+										>
 											<SelectValue placeholder="🔄 Repeat" />
 										</SelectTrigger>
 										<SelectContent>
@@ -226,7 +232,7 @@ export function CreateTask({
 									<PopoverTrigger asChild>
 										<Button
 											variant="outline"
-											className="h-9 w-full justify-start border-orange-100 bg-white text-left font-normal sm:flex-1"
+											className="h-12 w-full justify-start border-orange-200 bg-white text-left font-normal shadow-sm sm:flex-1"
 										>
 											<Calendar1 className="mr-2 h-4 w-4 text-orange-400" />
 											{scheduledDate
@@ -349,7 +355,7 @@ function AddNewCategoryInput({
 			onChange={(e) => setNewCategoryName(e.target.value)}
 			onKeyDown={handleEnterKey}
 			onBlur={handleCancel}
-			className="w-full sm:w-44"
+			className="h-12 w-full border border-orange-200/60 bg-white shadow-sm ring-offset-transparent focus:ring-2 focus:ring-orange-200 sm:w-44"
 			autoFocus
 		/>
 	)
@@ -401,11 +407,14 @@ function CategoryDropdown({
 				}
 			}}
 		>
-			<SelectTrigger className="h-10 w-full border-none bg-orange-50/50 ring-offset-transparent focus:ring-2 focus:ring-orange-200 sm:w-44">
+			<SelectTrigger
+				size="lg"
+				className="w-full border border-orange-200/60 bg-white shadow-sm ring-offset-transparent focus:ring-2 focus:ring-orange-200 sm:w-44"
+			>
 				<SelectValue
 					placeholder={
 						<div className="flex items-center gap-2 text-neutral-500">
-							<Tag className="h-4 w-4 text-orange-400" />
+							<Tag className="size-4 opacity-80" />
 							<span>Category</span>
 						</div>
 					}

@@ -1,10 +1,12 @@
 import {
 	createRootRoute,
 	HeadContent,
+	Link,
 	Outlet,
 	Scripts,
 } from "@tanstack/react-router"
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools"
+import { Archive, Home } from "lucide-react"
 import Version from "~/components/Version"
 import appCss from "../styles.css?url"
 
@@ -57,7 +59,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			<body className="min-h-dvh bg-gradient-to-b from-yellow-50 via-orange-50 to-red-50 font-sans text-neutral-950 antialiased">
 				<header className="sticky top-0 z-50 w-full border-orange-200/50 border-b bg-yellow-50/80 backdrop-blur-md">
 					<div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-4">
-						<div className="flex items-center gap-2">
+						<Link to="/" className="flex items-center gap-2">
 							<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 text-white shadow-lg shadow-rose-500/20">
 								<span className="font-bold text-xl">T</span>
 							</div>
@@ -67,7 +69,26 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 									Physical tickets for your digital tasks
 								</p>
 							</div>
-						</div>
+						</Link>
+
+						<nav className="flex items-center gap-2">
+							<Link
+								to="/"
+								className="flex items-center gap-2 rounded-lg px-3 py-2 text-neutral-700 text-sm transition-colors hover:bg-orange-100 hover:text-neutral-900 [&.active]:bg-orange-100 [&.active]:font-semibold [&.active]:text-neutral-900"
+								activeProps={{ className: "active" }}
+							>
+								<Home className="h-4 w-4" />
+								<span className="hidden sm:inline">Tasks</span>
+							</Link>
+							<Link
+								to="/archived"
+								className="flex items-center gap-2 rounded-lg px-3 py-2 text-neutral-700 text-sm transition-colors hover:bg-orange-100 hover:text-neutral-900 [&.active]:bg-orange-100 [&.active]:font-semibold [&.active]:text-neutral-900"
+								activeProps={{ className: "active" }}
+							>
+								<Archive className="h-4 w-4" />
+								<span className="hidden sm:inline">Archived</span>
+							</Link>
+						</nav>
 					</div>
 				</header>
 
