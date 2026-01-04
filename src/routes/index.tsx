@@ -1,10 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, useRouter } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
 import { Ticket } from "lucide-react"
+import { z } from "zod"
 import { CreateTask } from "~/components/tasks/CreateTask"
 import { TaskCard } from "~/components/tasks/TaskCard"
+import { toStartOfDay } from "~/logic/dates/taskDates"
 import { db } from "~/logic/db/db"
-import { getAll } from "~/logic/services/task.service"
+import { categories } from "~/logic/db/schema"
+import { create, getAll } from "~/logic/services/task.service"
 
 export const getCategoriesServerFn = createServerFn({
 	method: "GET",
@@ -20,6 +23,32 @@ export const getAllTicketsServerFn = createServerFn({
 	return tickets
 })
 
+export const createTaskServerFn = createServerFn({
+	method: "POST",
+})
+	.validator((data: unknown) =>
+		z
+			.object({
+				title: z.string(),
+				categoryId: z.string(),
+				nextPrintDate: z.date().optional(),
+				recursOnDays: z.array(z.number()).optional(),
+			})
+			.parse(data),
+	)
+	.handler(async ({ data }) => {
+		return await create(data)
+	})
+
+export const createCategoryServerFn = createServerFn({
+	method: "POST",
+})
+	.validator((data: unknown) => z.object({ name: z.string() }).parse(data))
+	.handler(async ({ data }) => {
+		const result = await db.insert(categories).values(data).returning()
+		return result[0]
+	})
+
 export const Route = createFileRoute("/")({
 	component: App,
 	loader: async () => {
@@ -32,6 +61,7 @@ export const Route = createFileRoute("/")({
 
 function App() {
 	const { categories, tasks } = Route.useLoaderData()
+	const router = useRouter()
 
 	return (
 		<div className="mx-auto max-w-4xl px-4 py-8 sm:py-12">
@@ -48,13 +78,49 @@ function App() {
 			<div className="mb-12">
 				<CreateTask
 					categories={categories}
-					// TODO: Implement these handlers.
-					// Should be done AFTER the rest of the app is implemented.
-					onCreateTask={(input) => {
-						console.log("Creating task now:", input)
+					onCreateCategory={async (name) => {
+						const newCategory = await createCategoryServerFn({ data: { name } })
+						router.invalidate()
+						return newCategory.id
 					}}
-					onPlanTask={(input) => {
-						console.log("Planning task for later:", input)
+					onCreateTask={async (input) => {
+						await createTaskServerFn({
+							data: {
+								title: input.text,
+								categoryId: input.categoryId,
+								nextPrintDate: toStartOfDay(new Date()),
+							},
+						})
+						router.invalidate()
+					}}
+					onPlanTask={async (input) => {
+						const recursOnDays =
+							input.schedulingType === "recurring"
+								? input.recurringType === "every-day"
+									? [0, 1, 2, 3, 4, 5, 6]
+									: input.selectedWeekdays?.map((day) => {
+											const mapping: Record<string, number> = {
+												sun: 0,
+												mon: 1,
+												tue: 2,
+												wed: 3,
+												thu: 4,
+												fri: 5,
+												sat: 6,
+											}
+											return mapping[day]
+										})
+								: undefined
+
+						await createTaskServerFn({
+							data: {
+								title: input.text,
+								categoryId: input.categoryId,
+								nextPrintDate: toStartOfDay(input.scheduledDate),
+								recursOnDays,
+							},
+						})
+						router.invalidate()
 					}}
 				/>
 			</div>

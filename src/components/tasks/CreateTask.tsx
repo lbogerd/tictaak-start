@@ -28,6 +28,7 @@ export function CreateTask({
 	categories,
 	onCreateTask,
 	onPlanTask,
+	onCreateCategory,
 }: {
 	categories: { id: string; name: string }[]
 	onCreateTask?: (task: { text: string; categoryId: string }) => void
@@ -39,6 +40,7 @@ export function CreateTask({
 		recurringType?: "every-day" | "weekdays"
 		selectedWeekdays?: string[]
 	}) => void
+	onCreateCategory?: (name: string) => Promise<string>
 }) {
 	const [taskText, setTaskText] = useState("")
 	const [selectedCategory, setSelectedCategory] = useState("")
@@ -124,6 +126,7 @@ export function CreateTask({
 									categories={categories}
 									value={selectedCategory}
 									onChange={setSelectedCategory}
+									onCreateCategory={onCreateCategory}
 								/>
 							</div>
 
@@ -161,7 +164,7 @@ export function CreateTask({
 								type="submit"
 								className="h-10 w-full px-8 font-bold sm:w-auto"
 								gradient
-								disabled={!taskText.trim()}
+								disabled={!taskText.trim() || !selectedCategory}
 							>
 								{showScheduling && scheduledDate ? "Plan Task" : "Create Task"}
 							</Button>
@@ -356,10 +359,12 @@ function CategoryDropdown({
 	categories,
 	value,
 	onChange,
+	onCreateCategory,
 }: {
 	categories: { id: string; name: string }[]
 	value?: string
 	onChange?: (value: string) => void
+	onCreateCategory?: (name: string) => Promise<string>
 }) {
 	const [isAddingNew, setIsAddingNew] = useState(false)
 
@@ -367,8 +372,11 @@ function CategoryDropdown({
 		setIsAddingNew(true)
 	}
 
-	const handleSubmit = (name: string) => {
-		console.log("New category:", name)
+	const handleSubmit = async (name: string) => {
+		if (onCreateCategory) {
+			const newId = await onCreateCategory(name)
+			onChange?.(newId)
+		}
 		setIsAddingNew(false)
 	}
 

@@ -10,13 +10,13 @@ import {
 } from "lucide-react"
 import { cn } from "~/logic/client/cn"
 import { getTaskPrintStatus, recursOnLabels } from "~/logic/dates/taskDates"
-import type { Task } from "~/logic/db/schema"
+import type { Category, Task } from "~/logic/db/schema"
 import { Badge } from "../ui/Badge"
 import { Button } from "../ui/Button"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card"
 
 type TaskCardProps = {
-	task: Task
+	task: Task & { category: Category }
 	className?: string
 	onPrint?: (task: Task) => void
 	onArchive?: (task: Task) => void
@@ -150,7 +150,7 @@ export function TaskCard({
 							<span className="inline-flex items-center gap-1.5">
 								<Tags className="size-3.5 text-orange-400" />
 								<span className="font-medium text-neutral-900">
-									{task.categoryId}
+									{task.category.name}
 								</span>
 							</span>
 						}

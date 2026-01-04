@@ -26,6 +26,9 @@ export async function getById(id: string, includeArchived = false) {
 			eq(tasks.id, id),
 			includeArchived ? undefined : isNull(tasks.archivedAt),
 		),
+		with: {
+			category: true,
+		},
 	})
 }
 
@@ -45,6 +48,9 @@ export async function getAll(
 		where: includeArchived ? undefined : isNull(tasks.archivedAt),
 		offset: skip,
 		limit: take,
+		with: {
+			category: true,
+		},
 	})
 }
 
@@ -63,6 +69,9 @@ export async function getByCategoryId(
 			eq(tasks.categoryId, categoryId),
 			includeArchived ? undefined : isNull(tasks.archivedAt),
 		),
+		with: {
+			category: true,
+		},
 	})
 }
 
@@ -79,6 +88,9 @@ export async function getUpcoming(date?: Date) {
 			lt(tasks.lastPrintedAt, startDate),
 			isNull(tasks.archivedAt),
 		),
+		with: {
+			category: true,
+		},
 	})
 }
 
@@ -96,5 +108,8 @@ export async function getDue(date?: Date) {
 			lt(tasks.lastPrintedAt, tasks.nextPrintDate),
 			isNull(tasks.archivedAt),
 		),
+		with: {
+			category: true,
+		},
 	})
 }
