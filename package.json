@@ -19,7 +19,7 @@
 		"comp:add": "pnpm exec shadcn@latest add",
 		"db:generate": "pnpm exec drizzle-kit generate",
 		"db:push": "pnpm exec drizzle-kit push",
-		"db:seed": "node src/logic/db/seed.ts",
+		"db:seed": "node src/lib/db/seed.ts",
 		"db:reset": "pnpm run db:push && pnpm run db:seed",
 		"db:studio": "pnpm exec drizzle-kit studio"
 	},
