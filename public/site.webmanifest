@@ -1,6 +1,9 @@
 {
-	"name": "",
-	"short_name": "",
+	"name": "TicTaak",
+	"short_name": "TicTaak",
+	"description": "Create tasks, schedule them, and print them as focus tickets.",
+	"start_url": "/",
+	"scope": "/",
 	"icons": [
 		{
 			"src": "/android-chrome-192x192.png",
@@ -13,7 +16,8 @@
 			"type": "image/png"
 		}
 	],
-	"theme_color": "#ffffff",
-	"background_color": "#ffffff",
+	"theme_color": "#f97316",
+	"background_color": "#fff7ed",
+	"categories": ["productivity", "utilities"],
 	"display": "standalone"
 }
