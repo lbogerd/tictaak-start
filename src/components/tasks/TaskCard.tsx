@@ -8,9 +8,9 @@ import {
 	RotateCcw,
 	Tags,
 } from "lucide-react"
-import { cn } from "~/logic/client/cn"
-import { getTaskPrintStatus, recursOnLabels } from "~/logic/dates/taskDates"
-import type { Category, Task } from "~/logic/db/schema"
+import { cn } from "~/lib/client/cn"
+import { getTaskPrintStatus, recursOnLabels } from "~/lib/dates/taskDates"
+import type { Category, Task } from "~/lib/db/schema"
 import { Badge } from "../ui/Badge"
 import { Button } from "../ui/Button"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card"

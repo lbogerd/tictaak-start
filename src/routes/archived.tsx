@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
 import { Archive } from "lucide-react"
 import { TaskCard } from "~/components/tasks/TaskCard"
-import { getAll } from "~/logic/services/task.service"
+import { getAll } from "~/lib/services/task.service"
 
 export const getArchivedTicketsServerFn = createServerFn({
 	method: "GET",

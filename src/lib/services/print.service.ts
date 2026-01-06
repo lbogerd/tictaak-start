@@ -1,7 +1,7 @@
 import { format } from "date-fns"
-import { ThermalPrinter, PrinterTypes } from "node-thermal-printer"
+import { PrinterTypes, ThermalPrinter } from "node-thermal-printer"
 import { env } from "~/env"
-import type { Category, Task } from "~/logic/db/schema"
+import type { Category, Task } from "~/lib/db/schema"
 
 type PrintableTask = Task & { category: Category }
 

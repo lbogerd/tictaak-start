@@ -5,17 +5,17 @@ import { Ticket } from "lucide-react"
 import { z } from "zod"
 import { CreateTask } from "~/components/tasks/CreateTask"
 import { TaskCard } from "~/components/tasks/TaskCard"
-import { toStartOfDay } from "~/logic/dates/taskDates"
-import { db } from "~/logic/db/db"
-import { categories } from "~/logic/db/schema"
+import { toStartOfDay } from "~/lib/dates/taskDates"
+import { db } from "~/lib/db/db"
+import { categories } from "~/lib/db/schema"
+import { printTaskTicket } from "~/lib/services/print.service"
 import {
 	archive,
 	create,
 	getAll,
 	getById,
 	markPrinted,
-} from "~/logic/services/task.service"
-import { printTaskTicket } from "~/logic/services/print.service"
+} from "~/lib/services/task.service"
 
 export const getCategoriesServerFn = createServerFn({
 	method: "GET",

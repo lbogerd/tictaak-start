@@ -1,4 +1,4 @@
-import { cn } from "~/logic/client/cn"
+import { cn } from "~/lib/client/cn"
 
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
 	return (

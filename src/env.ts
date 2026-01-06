@@ -1,5 +1,5 @@
-import "dotenv/config" // needed to make the seed script work
 import { createEnv } from "@t3-oss/env-core"
+import "dotenv/config" // needed to make the seed script work
 import { z } from "zod"
 
 export const env = createEnv({
@@ -11,6 +11,8 @@ export const env = createEnv({
 		DATABASE_URL: z.url(),
 		DB_PROVIDER: z.enum(["pg", "pglite"]).optional().default("pg"),
 		PRINTER_URL: z.url().optional(),
+		BETTER_AUTH_SECRET: z.string().min(32),
+		BETTER_AUTH_URL: z.url().optional(),
 	},
 
 	/**

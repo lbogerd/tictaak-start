@@ -9,7 +9,7 @@ import {
 	Trash2,
 } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
-import { cn } from "~/logic/client/cn"
+import { cn } from "~/lib/client/cn"
 import { useHotkey } from "../../hooks/useHotkey"
 import { Button } from "../ui/Button"
 import { Calendar } from "../ui/Calendar"

@@ -1,7 +1,7 @@
 import { and, eq, gt, isNull, lt, lte } from "drizzle-orm"
-import { todayStart } from "~/logic/dates/taskDates"
-import { db } from "~/logic/db/db"
-import { type NewTask, tasks } from "~/logic/db/schema"
+import { todayStart } from "~/lib/dates/taskDates"
+import { db } from "~/lib/db/db"
+import { type NewTask, tasks } from "~/lib/db/schema"
 
 /**
  * Create a new ticket.

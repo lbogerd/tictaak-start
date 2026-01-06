@@ -1,5 +1,5 @@
 import { isAfter, isBefore, isEqual, startOfDay } from "date-fns"
-import type { Task } from "~/logic/db/schema"
+import type { Task } from "~/lib/db/schema"
 
 /**
  * Normalize a date-like value to a start-of-day Date in local time.
