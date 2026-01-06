@@ -13,6 +13,10 @@ pnpm start
 
 By default the app connects to a real Postgres instance via `DATABASE_URL`.
 
+## Thermal Printer
+
+Set `PRINTER_URL` to your network printer endpoint (example: `tcp://192.168.1.50:9100`) to enable ticket printing.
+
 ## Local Postgres (Docker)
 
 Build a local Postgres image that initializes schema from the SQL in `drizzle/*.sql`:

@@ -8,7 +8,14 @@ import { TaskCard } from "~/components/tasks/TaskCard"
 import { toStartOfDay } from "~/logic/dates/taskDates"
 import { db } from "~/logic/db/db"
 import { categories } from "~/logic/db/schema"
-import { archive, create, getAll } from "~/logic/services/task.service"
+import {
+	archive,
+	create,
+	getAll,
+	getById,
+	markPrinted,
+} from "~/logic/services/task.service"
+import { printTaskTicket } from "~/logic/services/print.service"
 
 export const getCategoriesServerFn = createServerFn({
 	method: "GET",
@@ -128,6 +135,24 @@ export const archiveCategoryServerFn = createServerFn({
 			.returning()
 	})
 
+export const printTaskServerFn = createServerFn({
+	method: "POST",
+})
+	.validator((data: unknown) => z.object({ id: z.string() }).parse(data))
+	.handler(async ({ data }) => {
+		const task = await getById(data.id, true)
+		if (!task) {
+			throw new Error("Task not found.")
+		}
+		if (task.archivedAt) {
+			throw new Error("Task is archived.")
+		}
+
+		await printTaskTicket(task)
+		const updated = await markPrinted(task.id)
+		return updated[0]
+	})
+
 export const Route = createFileRoute("/")({
 	component: App,
 	loader: async () => {
@@ -224,7 +249,10 @@ function App() {
 							<li key={task.id}>
 								<TaskCard
 									task={task}
-									onPrint={() => console.log("Printing task:", task)}
+									onPrint={async (task) => {
+										await printTaskServerFn({ data: { id: task.id } })
+										router.invalidate()
+									}}
 									onArchive={async (task) => {
 										await archiveTaskServerFn({ data: { id: task.id } })
 										router.invalidate()

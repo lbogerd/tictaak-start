@@ -126,3 +126,17 @@ export async function archive(id: string) {
 		.where(eq(tasks.id, id))
 		.returning()
 }
+
+/**
+ * Mark a task as printed.
+ * @param id - The ID of the task to update
+ * @param printedAt - When the task was printed
+ * @returns The updated task.
+ */
+export async function markPrinted(id: string, printedAt = new Date()) {
+	return await db
+		.update(tasks)
+		.set({ lastPrintedAt: printedAt })
+		.where(eq(tasks.id, id))
+		.returning()
+}
