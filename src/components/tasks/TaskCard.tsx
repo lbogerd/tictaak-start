@@ -46,10 +46,13 @@ export function TaskCard({
 			)}
 		>
 			{/* Ticket "punches" */}
-			<div className="-left-3 -translate-y-1/2 absolute top-1/2 h-6 w-6 rounded-full bg-orange-50" />
-			<div className="-right-3 -translate-y-1/2 absolute top-1/2 h-6 w-6 rounded-full bg-orange-50" />
+			<div className="-left-3 -translate-y-1/2 absolute top-1/2 z-10 h-6 w-6 rounded-full bg-orange-50" />
+			<div className="-right-3 -translate-y-1/2 absolute top-1/2 z-10 h-6 w-6 rounded-full bg-orange-50" />
 
-			<CardHeader className="gap-3 pb-4">
+			{/* Perforated line - aligned with side punches */}
+			<div className="absolute top-1/2 h-0 w-full border-orange-100 border-t-2 border-dashed" />
+
+			<CardHeader className="gap-3 pb-6">
 				<CardTitle className="flex items-start justify-between gap-3">
 					<span className="font-bold text-base sm:text-lg">{task.title}</span>
 					<div className="flex items-center gap-2">
@@ -132,10 +135,7 @@ export function TaskCard({
 				</div>
 			</CardHeader>
 
-			{/* Perforated line */}
-			<div className="relative h-px w-full border-orange-100 border-t-2 border-dashed px-6" />
-
-			<CardContent className="flex flex-col gap-3 pt-4">
+			<CardContent className="flex flex-col gap-3 pt-6">
 				<div className="flex flex-col gap-4 text-sm sm:flex-row sm:items-center sm:justify-between">
 					{nextPrintDate && (
 						<DetailRow
@@ -163,7 +163,7 @@ export function TaskCard({
 				</div>
 
 				{recursOn.length > 0 && (
-					<div className="flex flex-wrap items-center gap-2 border-orange-50 border-t pt-3">
+					<div className="flex flex-wrap items-center gap-2">
 						<span className="text-muted-foreground text-xs">Repeats:</span>
 						<div className="flex flex-wrap gap-1.5">
 							{recursOn.map((d) => (
