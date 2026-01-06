@@ -1,5 +1,6 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
+import { eq, isNull } from "drizzle-orm"
 import { Ticket } from "lucide-react"
 import { z } from "zod"
 import { CreateTask } from "~/components/tasks/CreateTask"
@@ -12,8 +13,9 @@ import { archive, create, getAll } from "~/logic/services/task.service"
 export const getCategoriesServerFn = createServerFn({
 	method: "GET",
 }).handler(async () => {
-	const categories = await db.query.categories.findMany()
-	return categories
+	return await db.query.categories.findMany({
+		where: isNull(categories.archivedAt),
+	})
 })
 
 export const getAllTicketsServerFn = createServerFn({
@@ -21,6 +23,63 @@ export const getAllTicketsServerFn = createServerFn({
 }).handler(async () => {
 	const tickets = await getAll()
 	return tickets
+})
+
+export const getTaskSuggestionsServerFn = createServerFn({
+	method: "GET",
+}).handler(async () => {
+	const tasks = await db.query.tasks.findMany({
+		columns: {
+			title: true,
+			createdAt: true,
+			lastPrintedAt: true,
+			categoryId: true,
+		},
+	})
+
+	const byTitle = new Map<
+		string,
+		{ title: string; count: number; lastUsed: Date; lastCategoryId: string }
+	>()
+
+	for (const task of tasks) {
+		const lastUsed =
+			task.lastPrintedAt && task.lastPrintedAt > task.createdAt
+				? task.lastPrintedAt
+				: task.createdAt
+		const existing = byTitle.get(task.title)
+
+		if (existing) {
+			existing.count += 1
+			if (lastUsed > existing.lastUsed) {
+				existing.lastUsed = lastUsed
+				existing.lastCategoryId = task.categoryId
+			}
+		} else {
+			byTitle.set(task.title, {
+				title: task.title,
+				count: 1,
+				lastUsed,
+				lastCategoryId: task.categoryId,
+			})
+		}
+	}
+
+	const dayMs = 24 * 60 * 60 * 1000
+	const suggestions = Array.from(byTitle.values())
+		.sort((a, b) => {
+			const scoreA = a.lastUsed.getTime() + a.count * dayMs
+			const scoreB = b.lastUsed.getTime() + b.count * dayMs
+			return scoreB - scoreA
+		})
+		.map((entry) => ({
+			title: entry.title,
+			count: entry.count,
+			lastUsed: entry.lastUsed.toISOString(),
+			categoryId: entry.lastCategoryId,
+		}))
+
+	return suggestions
 })
 
 export const createTaskServerFn = createServerFn({
@@ -57,18 +116,31 @@ export const archiveTaskServerFn = createServerFn({
 		return await archive(data.id)
 	})
 
+export const archiveCategoryServerFn = createServerFn({
+	method: "POST",
+})
+	.validator((data: unknown) => z.object({ id: z.string() }).parse(data))
+	.handler(async ({ data }) => {
+		return await db
+			.update(categories)
+			.set({ archivedAt: new Date() })
+			.where(eq(categories.id, data.id))
+			.returning()
+	})
+
 export const Route = createFileRoute("/")({
 	component: App,
 	loader: async () => {
 		const categories = await getCategoriesServerFn()
 		const tasks = await getAllTicketsServerFn()
+		const suggestions = await getTaskSuggestionsServerFn()
 
-		return { categories, tasks }
+		return { categories, tasks, suggestions }
 	},
 })
 
 function App() {
-	const { categories, tasks } = Route.useLoaderData()
+	const { categories, tasks, suggestions } = Route.useLoaderData()
 	const router = useRouter()
 
 	return (
@@ -86,10 +158,15 @@ function App() {
 			<div className="mb-12">
 				<CreateTask
 					categories={categories}
+					suggestions={suggestions}
 					onCreateCategory={async (name) => {
 						const newCategory = await createCategoryServerFn({ data: { name } })
 						router.invalidate()
 						return newCategory.id
+					}}
+					onArchiveCategory={async (id) => {
+						await archiveCategoryServerFn({ data: { id } })
+						router.invalidate()
 					}}
 					onCreateTask={async (input) => {
 						await createTaskServerFn({

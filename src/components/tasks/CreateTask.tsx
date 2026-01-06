@@ -6,8 +6,9 @@ import {
 	CalendarSync,
 	Plus,
 	Tag,
+	Trash2,
 } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { cn } from "~/logic/client/cn"
 import { useHotkey } from "../../hooks/useHotkey"
 import { Button } from "../ui/Button"
@@ -26,11 +27,19 @@ import { Separator } from "../ui/Separator"
 
 export function CreateTask({
 	categories,
+	suggestions,
 	onCreateTask,
 	onPlanTask,
 	onCreateCategory,
+	onArchiveCategory,
 }: {
 	categories: { id: string; name: string }[]
+	suggestions: {
+		title: string
+		count: number
+		lastUsed: string
+		categoryId: string
+	}[]
 	onCreateTask?: (task: { text: string; categoryId: string }) => void
 	onPlanTask?: (task: {
 		text: string
@@ -41,10 +50,13 @@ export function CreateTask({
 		selectedWeekdays?: string[]
 	}) => void
 	onCreateCategory?: (name: string) => Promise<string>
+	onArchiveCategory?: (id: string) => Promise<void>
 }) {
 	const [taskText, setTaskText] = useState("")
 	const [selectedCategory, setSelectedCategory] = useState("")
 	const [showScheduling, setShowScheduling] = useState(false)
+	const [showSuggestions, setShowSuggestions] = useState(false)
+	const [activeSuggestion, setActiveSuggestion] = useState(-1)
 	const [schedulingType, setSchedulingType] = useState<"once" | "recurring">(
 		"once",
 	)
@@ -91,12 +103,71 @@ export function CreateTask({
 
 		// Reset form
 		setTaskText("")
-		setSelectedCategory("")
 		setShowScheduling(false)
 		setScheduledDate(undefined)
 		setRecurringType("every-day")
 		setSelectedWeekdays([])
 	}
+
+	const filteredSuggestions = suggestions
+		.filter((suggestion) =>
+			suggestion.title.toLowerCase().includes(taskText.trim().toLowerCase()),
+		)
+		.filter((suggestion) => suggestion.title.trim() !== taskText.trim())
+		.slice(0, 6)
+
+	const suggestionsOpen =
+		showSuggestions &&
+		taskText.trim().length > 0 &&
+		filteredSuggestions.length > 0
+
+	const applySuggestion = (suggestion: (typeof suggestions)[number]) => {
+		setTaskText(suggestion.title)
+		if (suggestion.categoryId) {
+			setSelectedCategory(
+				validCategoryIds.has(suggestion.categoryId)
+					? suggestion.categoryId
+					: "",
+			)
+		}
+		setShowSuggestions(false)
+	}
+
+	const validCategoryIds = useMemo(
+		() => new Set(categories.map((category) => category.id)),
+		[categories],
+	)
+
+	useEffect(() => {
+		if (typeof window === "undefined") return
+
+		if (selectedCategory && !validCategoryIds.has(selectedCategory)) {
+			localStorage.removeItem("tictaak:lastCategoryId")
+			setSelectedCategory("")
+			return
+		}
+
+		if (!selectedCategory) {
+			const storedCategory = localStorage.getItem("tictaak:lastCategoryId")
+			if (storedCategory && validCategoryIds.has(storedCategory)) {
+				setSelectedCategory(storedCategory)
+			} else if (storedCategory) {
+				localStorage.removeItem("tictaak:lastCategoryId")
+			}
+		}
+	}, [selectedCategory, validCategoryIds])
+
+	useEffect(() => {
+		if (typeof window === "undefined") return
+
+		if (selectedCategory && validCategoryIds.has(selectedCategory)) {
+			localStorage.setItem("tictaak:lastCategoryId", selectedCategory)
+		}
+	}, [selectedCategory, validCategoryIds])
+
+	useEffect(() => {
+		setActiveSuggestion(filteredSuggestions.length > 0 ? 0 : -1)
+	}, [filteredSuggestions.length])
 
 	return (
 		<Card className="overflow-hidden border-none bg-white p-1 shadow-2xl shadow-orange-900/10">
@@ -111,13 +182,83 @@ export function CreateTask({
 					{/* Main task input and category row */}
 					<div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
 						<div className="relative flex-1">
-							<Input
-								type="text"
-								placeholder="What needs to be done?"
-								className="h-12 w-full border border-orange-200/60 bg-white px-4 shadow-sm ring-offset-transparent focus-visible:border-orange-300 focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-orange-200"
-								value={taskText}
-								onChange={(e) => setTaskText(e.target.value)}
-							/>
+							<Popover
+								open={suggestionsOpen}
+								onOpenChange={(open) => setShowSuggestions(open)}
+							>
+								<PopoverTrigger asChild>
+									<Input
+										type="text"
+										placeholder="What needs to be done?"
+										className="h-12 w-full border border-orange-200/60 bg-white px-4 shadow-sm ring-offset-transparent focus-visible:border-orange-300 focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-orange-200"
+										value={taskText}
+										onChange={(e) => {
+											setTaskText(e.target.value)
+											if (!showSuggestions) {
+												setShowSuggestions(true)
+											}
+										}}
+										onFocus={() => setShowSuggestions(true)}
+										onKeyDown={(event) => {
+											if (!filteredSuggestions.length) return
+
+											if (event.key === "ArrowDown") {
+												event.preventDefault()
+												setShowSuggestions(true)
+												setActiveSuggestion((prev) =>
+													prev >= filteredSuggestions.length - 1 ? 0 : prev + 1,
+												)
+											}
+
+											if (event.key === "ArrowUp") {
+												event.preventDefault()
+												setShowSuggestions(true)
+												setActiveSuggestion((prev) =>
+													prev <= 0 ? filteredSuggestions.length - 1 : prev - 1,
+												)
+											}
+
+											if (event.key === "Enter" && activeSuggestion >= 0) {
+												event.preventDefault()
+												const suggestion = filteredSuggestions[activeSuggestion]
+												if (suggestion) {
+													applySuggestion(suggestion)
+												}
+											}
+
+											if (event.key === "Escape") {
+												setShowSuggestions(false)
+											}
+										}}
+									/>
+								</PopoverTrigger>
+								<PopoverContent
+									className="w-[var(--radix-popover-trigger-width)] rounded-xl border-orange-100 p-2 shadow-xl"
+									align="start"
+									side="bottom"
+									onOpenAutoFocus={(event) => event.preventDefault()}
+								>
+									<div className="max-h-56 overflow-auto">
+										{filteredSuggestions.map((suggestion, index) => (
+											<button
+												key={suggestion.title}
+												type="button"
+												className={cn(
+													"flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm text-neutral-700 transition hover:bg-orange-50 hover:text-orange-700",
+													activeSuggestion === index &&
+														"bg-orange-50 text-orange-700",
+												)}
+												onClick={() => applySuggestion(suggestion)}
+											>
+												<span className="truncate">{suggestion.title}</span>
+												<span className="ml-4 rounded-full bg-orange-100 px-2 py-0.5 text-xs text-orange-700">
+													{suggestion.count}x
+												</span>
+											</button>
+										))}
+									</div>
+								</PopoverContent>
+							</Popover>
 						</div>
 
 						<div className="flex flex-wrap items-stretch gap-3">
@@ -127,6 +268,7 @@ export function CreateTask({
 									value={selectedCategory}
 									onChange={setSelectedCategory}
 									onCreateCategory={onCreateCategory}
+									onArchiveCategory={onArchiveCategory}
 								/>
 							</div>
 
@@ -366,11 +508,13 @@ function CategoryDropdown({
 	value,
 	onChange,
 	onCreateCategory,
+	onArchiveCategory,
 }: {
 	categories: { id: string; name: string }[]
 	value?: string
 	onChange?: (value: string) => void
 	onCreateCategory?: (name: string) => Promise<string>
+	onArchiveCategory?: (id: string) => Promise<void>
 }) {
 	const [isAddingNew, setIsAddingNew] = useState(false)
 
@@ -426,9 +570,33 @@ function CategoryDropdown({
 					<SelectItem
 						key={category.id}
 						value={category.id}
-						className="rounded-lg focus:bg-orange-50 focus:text-orange-700"
+						className="group rounded-lg pr-2 focus:bg-orange-50 focus:text-orange-700"
 					>
-						{category.name}
+						<span className="flex w-full items-center justify-between gap-3">
+							<span>{category.name}</span>
+							{onArchiveCategory && (
+								<button
+									type="button"
+									className="rounded-md p-1 text-neutral-400 opacity-0 transition group-hover:opacity-100 hover:bg-orange-100 hover:text-orange-600"
+									onPointerDown={(event) => {
+										event.preventDefault()
+										event.stopPropagation()
+									}}
+									onClick={async (event) => {
+										event.preventDefault()
+										event.stopPropagation()
+										await onArchiveCategory(category.id)
+										if (value === category.id) {
+											onChange?.("")
+										}
+									}}
+									aria-label={`Delete category ${category.name}`}
+									title="Delete category"
+								>
+									<Trash2 className="h-4 w-4" />
+								</button>
+							)}
+						</span>
 					</SelectItem>
 				))}
 
