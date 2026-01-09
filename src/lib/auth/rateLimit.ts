@@ -3,6 +3,8 @@
  * Tracks both IP-based and username-based limits.
  */
 
+import { authLogger } from "~/lib/logger/logger"
+
 type RateLimitEntry = {
 	attempts: number
 	firstAttempt: number
@@ -115,6 +117,10 @@ export function checkLoginRateLimit(
 	if (ip) {
 		const ipResult = checkLimit(ipLimits, ip)
 		if (!ipResult.allowed && ipResult.retryAfterMs !== undefined) {
+			authLogger.warn(
+				{ ip, retryAfterMs: ipResult.retryAfterMs },
+				"Rate limit exceeded for IP",
+			)
 			return { allowed: false, retryAfterMs: ipResult.retryAfterMs }
 		}
 	}
@@ -122,6 +128,10 @@ export function checkLoginRateLimit(
 	// Check username limit
 	const usernameResult = checkLimit(usernameLimits, username.toLowerCase())
 	if (!usernameResult.allowed && usernameResult.retryAfterMs !== undefined) {
+		authLogger.warn(
+			{ username, retryAfterMs: usernameResult.retryAfterMs },
+			"Rate limit exceeded for username",
+		)
 		return { allowed: false, retryAfterMs: usernameResult.retryAfterMs }
 	}
 
@@ -139,6 +149,18 @@ export function recordFailedLogin(
 		recordAttempt(ipLimits, ip)
 	}
 	recordAttempt(usernameLimits, username.toLowerCase())
+
+	const ipEntry = ip ? ipLimits.get(ip) : null
+	const usernameEntry = usernameLimits.get(username.toLowerCase())
+	authLogger.debug(
+		{
+			ip,
+			username,
+			ipAttempts: ipEntry?.attempts,
+			usernameAttempts: usernameEntry?.attempts,
+		},
+		"Failed login attempt recorded",
+	)
 }
 
 /**
@@ -152,21 +174,37 @@ export function resetLoginRateLimit(
 		resetLimit(ipLimits, ip)
 	}
 	resetLimit(usernameLimits, username.toLowerCase())
+	authLogger.debug({ ip, username }, "Rate limit reset after successful login")
 }
 
 // Periodic cleanup of stale entries (run every 5 minutes)
 setInterval(
 	() => {
 		const now = Date.now()
+		let ipCleaned = 0
+		let usernameCleaned = 0
+
 		for (const [key, entry] of ipLimits) {
 			if (!cleanupEntry(entry, now)) {
 				ipLimits.delete(key)
+				ipCleaned++
 			}
 		}
 		for (const [key, entry] of usernameLimits) {
 			if (!cleanupEntry(entry, now)) {
 				usernameLimits.delete(key)
+				usernameCleaned++
 			}
+		}
+
+		if (ipCleaned > 0 || usernameCleaned > 0) {
+			authLogger.debug(
+				{
+					ipEntriesCleared: ipCleaned,
+					usernameEntriesCleared: usernameCleaned,
+				},
+				"Rate limit entries cleaned up",
+			)
 		}
 	},
 	5 * 60 * 1000,

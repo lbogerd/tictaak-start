@@ -1,3 +1,4 @@
+import { dbLogger } from "../logger/logger.ts"
 import { db } from "./db.ts"
 import { categories, tasks } from "./schema.ts"
 
@@ -6,8 +7,8 @@ export async function resetDatabase() {
 	await db.delete(tasks)
 }
 
-console.log("⚠️ Removing all records from the database...")
+dbLogger.warn("Removing all records from the database...")
 
 await resetDatabase()
 
-console.log("✅ All records removed from the database.")
+dbLogger.info("All records removed from the database.")

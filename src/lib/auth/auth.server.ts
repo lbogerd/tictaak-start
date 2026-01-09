@@ -6,6 +6,7 @@ import {
 import { and, eq, gt, isNull, lt } from "drizzle-orm"
 import { createHash, randomBytes } from "node:crypto"
 import { env } from "~/env"
+import { authLogger } from "~/lib/logger/logger"
 import { db } from "~/lib/db/db"
 import { sessions, users } from "~/lib/db/schema"
 import { hashPassword, verifyPassword, verifyPasswordDummy } from "./password"
@@ -40,6 +41,7 @@ export async function createUser(username: string, password: string) {
 			passwordSalt: salt,
 		})
 		.returning()
+	authLogger.info({ userId: user.id, username }, "User created")
 	return user
 }
 
@@ -56,6 +58,7 @@ export async function verifyUserCredentials(
 	// constant-time behavior.
 	if (!user) {
 		await verifyPasswordDummy(password)
+		authLogger.warn({ username }, "Login attempt for non-existent user")
 		return null
 	}
 
@@ -65,8 +68,13 @@ export async function verifyUserCredentials(
 		user.passwordHash,
 	)
 	if (!ok) {
+		authLogger.warn(
+			{ userId: user.id, username },
+			"Failed login attempt (invalid password)",
+		)
 		return null
 	}
+	authLogger.info({ userId: user.id, username }, "User credentials verified")
 	return { id: user.id, username: user.username }
 }
 
@@ -89,6 +97,7 @@ export async function createSession(userId: string) {
 		maxAge: sessionMaxAgeSeconds(),
 	})
 
+	authLogger.info({ userId, expiresAt }, "Session created")
 	return { token, expiresAt }
 }
 
@@ -97,6 +106,7 @@ export async function clearSession() {
 	if (token) {
 		const tokenHash = hashSessionToken(token)
 		await db.delete(sessions).where(eq(sessions.tokenHash, tokenHash))
+		authLogger.info("Session cleared")
 	}
 	deleteCookie(SESSION_COOKIE_NAME, { path: "/" })
 }
@@ -126,6 +136,7 @@ export async function getSessionUser(): Promise<AuthUser | null> {
 		.limit(1)
 
 	if (!session) {
+		authLogger.debug("Invalid or expired session")
 		await clearSession()
 		return null
 	}
@@ -151,5 +162,8 @@ export async function cleanupExpiredSessions(): Promise<number> {
 		.delete(sessions)
 		.where(lt(sessions.expiresAt, now))
 		.returning()
+	if (result.length > 0) {
+		authLogger.info({ count: result.length }, "Cleaned up expired sessions")
+	}
 	return result.length
 }
