@@ -1,5 +1,5 @@
 import { createFileRoute, redirect, useRouter } from "@tanstack/react-router"
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { z } from "zod"
 import { Button } from "~/components/ui/Button"
 import { Input } from "~/components/ui/Input"
@@ -22,7 +22,27 @@ function LoginPage() {
 	const router = useRouter()
 	const { redirect: redirectTo } = Route.useSearch()
 	const [error, setError] = useState<string | null>(null)
-	const [pending, setPending] = useState(false)
+	const [pending, startTransition] = useTransition()
+
+	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+		event.preventDefault()
+		setError(null)
+
+		const formData = new FormData(event.currentTarget)
+		const username = String(formData.get("username") || "").trim()
+		const password = String(formData.get("password") || "")
+
+		startTransition(async () => {
+			try {
+				await loginServerFn({ data: { username, password } })
+				await router.invalidate()
+				await router.navigate({ to: redirectTo || "/" })
+			} catch (err) {
+				const message = err instanceof Error ? err.message : "Login failed."
+				setError(message)
+			}
+		})
+	}
 
 	return (
 		<div className="mx-auto flex min-h-[calc(100dvh-4rem)] max-w-4xl items-center justify-center px-4 py-12">
@@ -34,30 +54,7 @@ function LoginPage() {
 					</p>
 				</div>
 
-				<form
-					className="space-y-4"
-					onSubmit={async (event) => {
-						event.preventDefault()
-						setError(null)
-						setPending(true)
-
-						const formData = new FormData(event.currentTarget)
-						const username = String(formData.get("username") || "").trim()
-						const password = String(formData.get("password") || "")
-
-						try {
-							await loginServerFn({ data: { username, password } })
-							await router.invalidate()
-							await router.navigate({ to: redirectTo || "/" })
-						} catch (err) {
-							const message =
-								err instanceof Error ? err.message : "Login failed."
-							setError(message)
-						} finally {
-							setPending(false)
-						}
-					}}
-				>
+				<form className="space-y-4" onSubmit={handleSubmit}>
 					<div className="block text-sm">
 						<label
 							htmlFor="username"
