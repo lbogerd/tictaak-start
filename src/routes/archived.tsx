@@ -2,11 +2,13 @@ import { createFileRoute } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
 import { Archive } from "lucide-react"
 import { TaskCard } from "~/components/tasks/TaskCard"
+import { requireUser } from "~/lib/auth/auth.server"
 import { getAll } from "~/lib/services/task.service"
 
 export const getArchivedTicketsServerFn = createServerFn({
 	method: "GET",
 }).handler(async () => {
+	await requireUser()
 	const tickets = await getAll(true)
 	return tickets.filter((t) => t.archivedAt !== null)
 })

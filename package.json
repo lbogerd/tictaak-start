@@ -21,7 +21,8 @@
 		"db:push": "pnpm exec drizzle-kit push",
 		"db:seed": "node src/lib/db/seed.ts",
 		"db:reset": "pnpm run db:push && pnpm run db:seed",
-		"db:studio": "pnpm exec drizzle-kit studio"
+		"db:studio": "pnpm exec drizzle-kit studio",
+		"auth:create-user": "node scripts/create-user.ts"
 	},
 	"dependencies": {
 		"@fontsource/poppins": "5.2.6",

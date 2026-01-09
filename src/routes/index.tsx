@@ -5,6 +5,7 @@ import { Ticket } from "lucide-react"
 import { z } from "zod"
 import { CreateTask } from "~/components/tasks/CreateTask"
 import { TaskCard } from "~/components/tasks/TaskCard"
+import { requireUser } from "~/lib/auth/auth.server"
 import { toStartOfDay } from "~/lib/dates/taskDates"
 import { db } from "~/lib/db/db"
 import { categories } from "~/lib/db/schema"
@@ -20,6 +21,7 @@ import {
 export const getCategoriesServerFn = createServerFn({
 	method: "GET",
 }).handler(async () => {
+	await requireUser()
 	return await db.query.categories.findMany({
 		where: isNull(categories.archivedAt),
 	})
@@ -28,6 +30,7 @@ export const getCategoriesServerFn = createServerFn({
 export const getAllTicketsServerFn = createServerFn({
 	method: "GET",
 }).handler(async () => {
+	await requireUser()
 	const tickets = await getAll()
 	return tickets
 })
@@ -35,6 +38,7 @@ export const getAllTicketsServerFn = createServerFn({
 export const getTaskSuggestionsServerFn = createServerFn({
 	method: "GET",
 }).handler(async () => {
+	await requireUser()
 	const tasks = await db.query.tasks.findMany({
 		columns: {
 			title: true,
@@ -103,6 +107,7 @@ export const createTaskServerFn = createServerFn({
 			.parse(data),
 	)
 	.handler(async ({ data }) => {
+		await requireUser()
 		return await create(data)
 	})
 
@@ -111,6 +116,7 @@ export const createCategoryServerFn = createServerFn({
 })
 	.validator((data: unknown) => z.object({ name: z.string() }).parse(data))
 	.handler(async ({ data }) => {
+		await requireUser()
 		const result = await db.insert(categories).values(data).returning()
 		return result[0]
 	})
@@ -120,6 +126,7 @@ export const archiveTaskServerFn = createServerFn({
 })
 	.validator((data: unknown) => z.object({ id: z.string() }).parse(data))
 	.handler(async ({ data }) => {
+		await requireUser()
 		return await archive(data.id)
 	})
 
@@ -128,6 +135,7 @@ export const archiveCategoryServerFn = createServerFn({
 })
 	.validator((data: unknown) => z.object({ id: z.string() }).parse(data))
 	.handler(async ({ data }) => {
+		await requireUser()
 		return await db
 			.update(categories)
 			.set({ archivedAt: new Date() })
@@ -140,6 +148,7 @@ export const printTaskServerFn = createServerFn({
 })
 	.validator((data: unknown) => z.object({ id: z.string() }).parse(data))
 	.handler(async ({ data }) => {
+		await requireUser()
 		const task = await getById(data.id, true)
 		if (!task) {
 			throw new Error("Task not found.")
