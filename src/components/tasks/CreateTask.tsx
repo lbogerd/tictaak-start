@@ -244,14 +244,14 @@ export function CreateTask({
 												key={suggestion.title}
 												type="button"
 												className={cn(
-													"flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm text-neutral-700 transition hover:bg-orange-50 hover:text-orange-700",
+													"flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-neutral-700 text-sm transition hover:bg-orange-50 hover:text-orange-700",
 													activeSuggestion === index &&
 														"bg-orange-50 text-orange-700",
 												)}
 												onClick={() => applySuggestion(suggestion)}
 											>
 												<span className="truncate">{suggestion.title}</span>
-												<span className="ml-4 rounded-full bg-orange-100 px-2 py-0.5 text-xs text-orange-700">
+												<span className="ml-4 rounded-full bg-orange-100 px-2 py-0.5 text-orange-700 text-xs">
 													{suggestion.count}x
 												</span>
 											</button>
@@ -577,7 +577,7 @@ function CategoryDropdown({
 							{onArchiveCategory && (
 								<button
 									type="button"
-									className="rounded-md p-1 text-neutral-400 opacity-0 transition group-hover:opacity-100 hover:bg-orange-100 hover:text-orange-600"
+									className="rounded-md p-1 text-neutral-400 opacity-0 transition hover:bg-orange-100 hover:text-orange-600 group-hover:opacity-100"
 									onPointerDown={(event) => {
 										event.preventDefault()
 										event.stopPropagation()

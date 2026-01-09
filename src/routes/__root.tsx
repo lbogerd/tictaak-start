@@ -121,12 +121,9 @@ function RootDocument({
 										<span className="hidden sm:inline">Archived</span>
 									</Link>
 								</nav>
-								<div
-									aria-hidden="true"
-									className="h-6 w-px bg-orange-200/80"
-								/>
+								<div aria-hidden="true" className="h-6 w-px bg-orange-200/80" />
 								<div className="flex items-center gap-2 text-neutral-600 text-xs sm:text-sm">
-									<span className="hidden sm:inline font-medium text-neutral-700">
+									<span className="hidden font-medium text-neutral-700 sm:inline">
 										{user.username}
 									</span>
 									<LogoutButton />

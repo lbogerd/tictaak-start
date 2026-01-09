@@ -1,5 +1,5 @@
 import { createFileRoute, redirect, useRouter } from "@tanstack/react-router"
-import { useState, useTransition } from "react"
+import { useId, useState, useTransition } from "react"
 import { z } from "zod"
 import { Button } from "~/components/ui/Button"
 import { Input } from "~/components/ui/Input"
@@ -23,6 +23,8 @@ function LoginPage() {
 	const { redirect: redirectTo } = Route.useSearch()
 	const [error, setError] = useState<string | null>(null)
 	const [pending, startTransition] = useTransition()
+	const usernameId = useId()
+	const passwordId = useId()
 
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault()
@@ -57,13 +59,13 @@ function LoginPage() {
 				<form className="space-y-4" onSubmit={handleSubmit}>
 					<div className="block text-sm">
 						<label
-							htmlFor="username"
+							htmlFor={usernameId}
 							className="mb-2 block font-semibold text-neutral-700"
 						>
 							Username
 						</label>
 						<Input
-							id="username"
+							id={usernameId}
 							name="username"
 							autoComplete="username"
 							required
@@ -73,13 +75,13 @@ function LoginPage() {
 
 					<div className="block text-sm">
 						<label
-							htmlFor="password"
+							htmlFor={passwordId}
 							className="mb-2 block font-semibold text-neutral-700"
 						>
 							Password
 						</label>
 						<Input
-							id="password"
+							id={passwordId}
 							type="password"
 							name="password"
 							autoComplete="current-password"

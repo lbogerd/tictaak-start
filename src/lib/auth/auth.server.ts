@@ -1,6 +1,10 @@
 import { createHash, randomBytes } from "node:crypto"
 import { and, eq, gt, isNull } from "drizzle-orm"
-import { deleteCookie, getCookie, setCookie } from "@tanstack/react-start/server"
+import {
+	deleteCookie,
+	getCookie,
+	setCookie,
+} from "@tanstack/react-start/server"
 import { env } from "~/env"
 import { db } from "~/lib/db/db"
 import { sessions, users } from "~/lib/db/schema"
@@ -49,7 +53,11 @@ export async function verifyUserCredentials(
 	if (!user) {
 		return null
 	}
-	const ok = await verifyPassword(password, user.passwordSalt, user.passwordHash)
+	const ok = await verifyPassword(
+		password,
+		user.passwordSalt,
+		user.passwordHash,
+	)
 	if (!ok) {
 		return null
 	}
