@@ -40,7 +40,9 @@ export const sessions = pgTable("Session", {
 	id: text("id")
 		.primaryKey()
 		.$defaultFn(() => crypto.randomUUID()),
-	userId: text("userId").notNull(),
+	userId: text("userId")
+		.notNull()
+		.references(() => users.id, { onDelete: "cascade" }),
 	tokenHash: text("tokenHash").notNull().unique(),
 	createdAt: timestamp("createdAt").defaultNow().notNull(),
 	expiresAt: timestamp("expiresAt").notNull(),

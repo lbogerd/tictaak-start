@@ -3,7 +3,40 @@ import { useId, useState, useTransition } from "react"
 import { z } from "zod"
 import { Button } from "~/components/ui/Button"
 import { Input } from "~/components/ui/Input"
-import { getSessionServerFn, loginServerFn } from "~/lib/auth/serverFns"
+import {
+	getCsrfTokenServerFn,
+	getSessionServerFn,
+	loginServerFn,
+} from "~/lib/auth/serverFns"
+
+/**
+ * Validate redirect URL to prevent open redirect attacks.
+ * Only allows relative paths starting with / and not containing //
+ */
+function validateRedirectUrl(url: string | undefined): string {
+	if (!url) return "/"
+
+	// Must start with / (relative path)
+	if (!url.startsWith("/")) return "/"
+
+	// Must not contain // (protocol-relative URL or path traversal)
+	if (url.includes("//")) return "/"
+
+	// Must not contain backslashes (Windows path or escape sequence)
+	if (url.includes("\\")) return "/"
+
+	// Additional check: decode and re-check for encoded attacks
+	try {
+		const decoded = decodeURIComponent(url)
+		if (decoded.includes("//") || decoded.includes("\\")) return "/"
+		if (!decoded.startsWith("/")) return "/"
+	} catch {
+		// If decoding fails, reject
+		return "/"
+	}
+
+	return url
+}
 
 export const Route = createFileRoute("/login")({
 	validateSearch: z.object({
@@ -12,8 +45,13 @@ export const Route = createFileRoute("/login")({
 	beforeLoad: async ({ search }) => {
 		const user = await getSessionServerFn()
 		if (user) {
-			throw redirect({ to: search.redirect || "/" })
+			throw redirect({ to: validateRedirectUrl(search.redirect) })
 		}
+	},
+	loader: async () => {
+		// Get CSRF token on page load
+		const { csrfToken } = await getCsrfTokenServerFn()
+		return { csrfToken }
 	},
 	component: LoginPage,
 })
@@ -21,10 +59,14 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
 	const router = useRouter()
 	const { redirect: redirectTo } = Route.useSearch()
+	const { csrfToken } = Route.useLoaderData()
 	const [error, setError] = useState<string | null>(null)
 	const [pending, startTransition] = useTransition()
 	const usernameId = useId()
 	const passwordId = useId()
+
+	// Validate redirect URL on client side as well
+	const safeRedirect = validateRedirectUrl(redirectTo)
 
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault()
@@ -36,9 +78,9 @@ function LoginPage() {
 
 		startTransition(async () => {
 			try {
-				await loginServerFn({ data: { username, password } })
+				await loginServerFn({ data: { username, password, csrfToken } })
 				await router.invalidate()
-				await router.navigate({ to: redirectTo || "/" })
+				await router.navigate({ to: safeRedirect })
 			} catch (err) {
 				const message = err instanceof Error ? err.message : "Login failed."
 				setError(message)

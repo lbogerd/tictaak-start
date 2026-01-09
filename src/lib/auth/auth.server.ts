@@ -1,14 +1,14 @@
-import { createHash, randomBytes } from "node:crypto"
-import { and, eq, gt, isNull } from "drizzle-orm"
 import {
 	deleteCookie,
 	getCookie,
 	setCookie,
 } from "@tanstack/react-start/server"
+import { and, eq, gt, isNull, lt } from "drizzle-orm"
+import { createHash, randomBytes } from "node:crypto"
 import { env } from "~/env"
 import { db } from "~/lib/db/db"
 import { sessions, users } from "~/lib/db/schema"
-import { hashPassword, verifyPassword } from "./password"
+import { hashPassword, verifyPassword, verifyPasswordDummy } from "./password"
 
 const SESSION_COOKIE_NAME = "tictaak_session"
 const SESSION_TTL_DAYS = 30
@@ -50,9 +50,15 @@ export async function verifyUserCredentials(
 	const user = await db.query.users.findFirst({
 		where: eq(users.username, username),
 	})
+
+	// Always run password verification to prevent timing-based user enumeration.
+	// If user doesn't exist, we verify against dummy values to maintain
+	// constant-time behavior.
 	if (!user) {
+		await verifyPasswordDummy(password)
 		return null
 	}
+
 	const ok = await verifyPassword(
 		password,
 		user.passwordSalt,
@@ -133,4 +139,17 @@ export async function requireUser() {
 		throw new Error("Unauthorized")
 	}
 	return user
+}
+
+/**
+ * Clean up expired sessions from the database.
+ * Should be called periodically (e.g., on server startup or via cron).
+ */
+export async function cleanupExpiredSessions(): Promise<number> {
+	const now = new Date()
+	const result = await db
+		.delete(sessions)
+		.where(lt(sessions.expiresAt, now))
+		.returning()
+	return result.length
 }
