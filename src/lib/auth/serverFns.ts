@@ -1,4 +1,4 @@
-import { createServerFn } from "@tanstack/react-start"
+import { createMiddleware, createServerFn } from "@tanstack/react-start"
 import { z } from "zod"
 import {
 	clearSession,
@@ -6,6 +6,30 @@ import {
 	getSessionUser,
 	verifyUserCredentials,
 } from "./auth.server"
+
+// Authentication middleware - checks if user is logged in
+const authMiddleware = createMiddleware({ type: "function" }).server(
+	async ({ next }) => {
+		const user = await getSessionUser()
+
+		if (!user) {
+			throw new Error("Unauthorized - Please login")
+		}
+
+		return next({
+			context: {
+				userId: user.id,
+				user,
+				isAuthenticated: true,
+			},
+		})
+	},
+)
+
+// Factory function for creating authenticated server functions
+export function createAuthServerFn(options?: { method?: "GET" | "POST" }) {
+	return createServerFn(options).middleware([authMiddleware])
+}
 
 export const getSessionServerFn = createServerFn({
 	method: "GET",
@@ -31,9 +55,8 @@ export const loginServerFn = createServerFn({
 		return { ok: true }
 	})
 
-export const logoutServerFn = createServerFn({
+export const logoutServerFn = createAuthServerFn({
 	method: "POST",
-	type: "dynamic",
 }).handler(async () => {
 	await clearSession()
 	return { ok: true }

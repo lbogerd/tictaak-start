@@ -1,11 +1,10 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router"
-import { createServerFn } from "@tanstack/react-start"
 import { eq, isNull } from "drizzle-orm"
 import { Ticket } from "lucide-react"
 import { z } from "zod"
 import { CreateTask } from "~/components/tasks/CreateTask"
 import { TaskCard } from "~/components/tasks/TaskCard"
-import { requireUser } from "~/lib/auth/auth.server"
+import { createAuthServerFn } from "~/lib/auth/serverFns"
 import { toStartOfDay } from "~/lib/dates/taskDates"
 import { db } from "~/lib/db/db"
 import { categories } from "~/lib/db/schema"
@@ -18,27 +17,24 @@ import {
 	markPrinted,
 } from "~/lib/services/task.service"
 
-export const getCategoriesServerFn = createServerFn({
+export const getCategoriesServerFn = createAuthServerFn({
 	method: "GET",
 }).handler(async () => {
-	await requireUser()
 	return await db.query.categories.findMany({
 		where: isNull(categories.archivedAt),
 	})
 })
 
-export const getAllTicketsServerFn = createServerFn({
+export const getAllTicketsServerFn = createAuthServerFn({
 	method: "GET",
 }).handler(async () => {
-	await requireUser()
 	const tickets = await getAll()
 	return tickets
 })
 
-export const getTaskSuggestionsServerFn = createServerFn({
+export const getTaskSuggestionsServerFn = createAuthServerFn({
 	method: "GET",
 }).handler(async () => {
-	await requireUser()
 	const tasks = await db.query.tasks.findMany({
 		columns: {
 			title: true,
@@ -93,7 +89,7 @@ export const getTaskSuggestionsServerFn = createServerFn({
 	return suggestions
 })
 
-export const createTaskServerFn = createServerFn({
+export const createTaskServerFn = createAuthServerFn({
 	method: "POST",
 })
 	.validator((data: unknown) =>
@@ -107,35 +103,31 @@ export const createTaskServerFn = createServerFn({
 			.parse(data),
 	)
 	.handler(async ({ data }) => {
-		await requireUser()
 		return await create(data)
 	})
 
-export const createCategoryServerFn = createServerFn({
+export const createCategoryServerFn = createAuthServerFn({
 	method: "POST",
 })
 	.validator((data: unknown) => z.object({ name: z.string() }).parse(data))
 	.handler(async ({ data }) => {
-		await requireUser()
 		const result = await db.insert(categories).values(data).returning()
 		return result[0]
 	})
 
-export const archiveTaskServerFn = createServerFn({
+export const archiveTaskServerFn = createAuthServerFn({
 	method: "POST",
 })
 	.validator((data: unknown) => z.object({ id: z.string() }).parse(data))
 	.handler(async ({ data }) => {
-		await requireUser()
 		return await archive(data.id)
 	})
 
-export const archiveCategoryServerFn = createServerFn({
+export const archiveCategoryServerFn = createAuthServerFn({
 	method: "POST",
 })
 	.validator((data: unknown) => z.object({ id: z.string() }).parse(data))
 	.handler(async ({ data }) => {
-		await requireUser()
 		return await db
 			.update(categories)
 			.set({ archivedAt: new Date() })
@@ -143,12 +135,11 @@ export const archiveCategoryServerFn = createServerFn({
 			.returning()
 	})
 
-export const printTaskServerFn = createServerFn({
+export const printTaskServerFn = createAuthServerFn({
 	method: "POST",
 })
 	.validator((data: unknown) => z.object({ id: z.string() }).parse(data))
 	.handler(async ({ data }) => {
-		await requireUser()
 		const task = await getById(data.id, true)
 		if (!task) {
 			throw new Error("Task not found.")
