@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/style/noNonNullAssertion: <explanation> */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
 	checkLoginRateLimit,
@@ -161,6 +160,7 @@ describe("checkLoginRateLimit", () => {
 		const secondRetry = result2.retryAfterMs
 
 		// Retry time should decrease
+		// biome-ignore lint/style/noNonNullAssertion: acceptable here for test
 		expect(secondRetry).toBeLessThan(firstRetry!)
 	})
 })

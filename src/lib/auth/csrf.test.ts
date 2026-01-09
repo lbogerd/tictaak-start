@@ -11,9 +11,8 @@ vi.mock("@tanstack/react-start/server", () => ({
 }))
 
 // Import after mocking
-const { getOrCreateCsrfToken, validateCsrfToken, ensureCsrfToken } = await import(
-	"./csrf"
-)
+const { getOrCreateCsrfToken, validateCsrfToken, ensureCsrfToken } =
+	await import("./csrf")
 
 describe("getOrCreateCsrfToken", () => {
 	it("creates a new token if none exists", () => {
