@@ -6,9 +6,9 @@ import {
 import { and, eq, gt, isNull, lt } from "drizzle-orm"
 import { createHash, randomBytes } from "node:crypto"
 import { env } from "~/env"
-import { authLogger } from "~/lib/logger/logger"
 import { db } from "~/lib/db/db"
 import { sessions, users } from "~/lib/db/schema"
+import { authLogger } from "~/lib/logger/logger"
 import { hashPassword, verifyPassword, verifyPasswordDummy } from "./password"
 
 const SESSION_COOKIE_NAME = "tictaak_session"

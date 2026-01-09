@@ -20,31 +20,25 @@ const WINDOW_MS = 15 * 60 * 1000 // 15 minutes
 const BASE_LOCKOUT_MS = 1000 // 1 second base lockout
 const MAX_LOCKOUT_MS = 15 * 60 * 1000 // 15 minutes max lockout
 
-function getExponentialLockout(attempts: number): number {
+function getExponentialLockout(attempts: number) {
 	// Exponential backoff: 1s, 2s, 4s, 8s, 16s... up to 15 minutes
 	const lockout = BASE_LOCKOUT_MS * 2 ** (attempts - MAX_ATTEMPTS)
 	return Math.min(lockout, MAX_LOCKOUT_MS)
 }
 
-function cleanupEntry(
-	entry: RateLimitEntry,
-	now: number,
-): RateLimitEntry | null {
+function cleanupEntry(entry: RateLimitEntry, now: number) {
 	// Reset if window has passed and not locked
 	if (now - entry.firstAttempt > WINDOW_MS && !entry.lockedUntil) {
 		return null
 	}
-	// Reset if lockout has expired
+	// Reset lockout if it has expired, but keep the entry for exponential backoff
 	if (entry.lockedUntil && now > entry.lockedUntil) {
-		return null
+		entry.lockedUntil = null
 	}
 	return entry
 }
 
-function checkLimit(
-	store: Map<string, RateLimitEntry>,
-	key: string,
-): { allowed: boolean; retryAfterMs?: number } {
+function checkLimit(store: Map<string, RateLimitEntry>, key: string) {
 	const now = Date.now()
 	let entry = store.get(key)
 
@@ -68,18 +62,10 @@ function checkLimit(
 		return { allowed: false, retryAfterMs: entry.lockedUntil - now }
 	}
 
-	// Check if too many attempts in window
-	if (entry.attempts >= MAX_ATTEMPTS) {
-		const lockoutMs = getExponentialLockout(entry.attempts)
-		entry.lockedUntil = now + lockoutMs
-		store.set(key, entry)
-		return { allowed: false, retryAfterMs: lockoutMs }
-	}
-
 	return { allowed: true }
 }
 
-function recordAttempt(store: Map<string, RateLimitEntry>, key: string): void {
+function recordAttempt(store: Map<string, RateLimitEntry>, key: string) {
 	const now = Date.now()
 	let entry = store.get(key)
 
@@ -94,10 +80,16 @@ function recordAttempt(store: Map<string, RateLimitEntry>, key: string): void {
 		entry.attempts++
 	}
 
+	// Set lockout if attempts reach or exceed the limit
+	if (entry.attempts >= MAX_ATTEMPTS) {
+		const lockoutMs = getExponentialLockout(entry.attempts)
+		entry.lockedUntil = now + lockoutMs
+	}
+
 	store.set(key, entry)
 }
 
-function resetLimit(store: Map<string, RateLimitEntry>, key: string): void {
+function resetLimit(store: Map<string, RateLimitEntry>, key: string) {
 	store.delete(key)
 }
 
@@ -109,24 +101,32 @@ export type RateLimitResult =
  * Check if a login attempt is allowed for the given IP and username.
  * Both must pass for the attempt to be allowed.
  */
-export function checkLoginRateLimit(
-	ip: string | undefined,
-	username: string,
-): RateLimitResult {
-	// Check IP limit (if IP is available)
-	if (ip) {
-		const ipResult = checkLimit(ipLimits, ip)
-		if (!ipResult.allowed && ipResult.retryAfterMs !== undefined) {
+export function checkLoginRateLimit(ip: string | undefined, username: string) {
+	// Check both limits - we need to evaluate both even if one fails
+	// to ensure lockouts are properly set on both
+	const ipResult = ip ? checkLimit(ipLimits, ip) : { allowed: true }
+	const usernameResult = checkLimit(usernameLimits, username.toLowerCase())
+
+	// Return the result with the longest retry time if either is blocked
+	if (!ipResult.allowed && ipResult.retryAfterMs !== undefined) {
+		authLogger.warn(
+			{ ip, retryAfterMs: ipResult.retryAfterMs },
+			"Rate limit exceeded for IP",
+		)
+		if (
+			!usernameResult.allowed &&
+			usernameResult.retryAfterMs !== undefined &&
+			usernameResult.retryAfterMs > ipResult.retryAfterMs
+		) {
 			authLogger.warn(
-				{ ip, retryAfterMs: ipResult.retryAfterMs },
-				"Rate limit exceeded for IP",
+				{ username, retryAfterMs: usernameResult.retryAfterMs },
+				"Rate limit exceeded for username",
 			)
-			return { allowed: false, retryAfterMs: ipResult.retryAfterMs }
+			return { allowed: false, retryAfterMs: usernameResult.retryAfterMs }
 		}
+		return { allowed: false, retryAfterMs: ipResult.retryAfterMs }
 	}
 
-	// Check username limit
-	const usernameResult = checkLimit(usernameLimits, username.toLowerCase())
 	if (!usernameResult.allowed && usernameResult.retryAfterMs !== undefined) {
 		authLogger.warn(
 			{ username, retryAfterMs: usernameResult.retryAfterMs },
@@ -141,10 +141,7 @@ export function checkLoginRateLimit(
 /**
  * Record a failed login attempt for the given IP and username.
  */
-export function recordFailedLogin(
-	ip: string | undefined,
-	username: string,
-): void {
+export function recordFailedLogin(ip: string | undefined, username: string) {
 	if (ip) {
 		recordAttempt(ipLimits, ip)
 	}
@@ -166,10 +163,7 @@ export function recordFailedLogin(
 /**
  * Reset rate limits for a successful login.
  */
-export function resetLoginRateLimit(
-	ip: string | undefined,
-	username: string,
-): void {
+export function resetLoginRateLimit(ip: string | undefined, username: string) {
 	if (ip) {
 		resetLimit(ipLimits, ip)
 	}
