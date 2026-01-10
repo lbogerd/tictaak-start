@@ -1,4 +1,4 @@
-import { cn } from "~/logic/client/cn"
+import { cn } from "~/lib/client/cn"
 
 function Card({ className, ...props }: React.ComponentProps<"div">) {
 	return (
@@ -84,10 +84,10 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
 
 export {
 	Card,
-	CardHeader,
-	CardFooter,
-	CardTitle,
 	CardAction,
-	CardDescription,
 	CardContent,
+	CardDescription,
+	CardFooter,
+	CardHeader,
+	CardTitle,
 }

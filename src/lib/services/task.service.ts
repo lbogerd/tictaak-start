@@ -1,7 +1,7 @@
 import { and, eq, gt, isNull, lt, lte } from "drizzle-orm"
-import { todayStart } from "~/logic/dates/taskDates"
-import { db } from "~/logic/db/db"
-import { type NewTask, tasks } from "~/logic/db/schema"
+import { todayStart } from "~/lib/dates/taskDates"
+import { db } from "~/lib/db/db"
+import { type NewTask, tasks } from "~/lib/db/schema"
 
 /**
  * Create a new ticket.
@@ -26,6 +26,9 @@ export async function getById(id: string, includeArchived = false) {
 			eq(tasks.id, id),
 			includeArchived ? undefined : isNull(tasks.archivedAt),
 		),
+		with: {
+			category: true,
+		},
 	})
 }
 
@@ -45,6 +48,9 @@ export async function getAll(
 		where: includeArchived ? undefined : isNull(tasks.archivedAt),
 		offset: skip,
 		limit: take,
+		with: {
+			category: true,
+		},
 	})
 }
 
@@ -63,6 +69,9 @@ export async function getByCategoryId(
 			eq(tasks.categoryId, categoryId),
 			includeArchived ? undefined : isNull(tasks.archivedAt),
 		),
+		with: {
+			category: true,
+		},
 	})
 }
 
@@ -79,6 +88,9 @@ export async function getUpcoming(date?: Date) {
 			lt(tasks.lastPrintedAt, startDate),
 			isNull(tasks.archivedAt),
 		),
+		with: {
+			category: true,
+		},
 	})
 }
 
@@ -96,5 +108,35 @@ export async function getDue(date?: Date) {
 			lt(tasks.lastPrintedAt, tasks.nextPrintDate),
 			isNull(tasks.archivedAt),
 		),
+		with: {
+			category: true,
+		},
 	})
+}
+
+/**
+ * Archive a task by ID
+ * @param id - The ID of the task to archive
+ * @returns The archived task.
+ */
+export async function archive(id: string) {
+	return await db
+		.update(tasks)
+		.set({ archivedAt: new Date() })
+		.where(eq(tasks.id, id))
+		.returning()
+}
+
+/**
+ * Mark a task as printed.
+ * @param id - The ID of the task to update
+ * @param printedAt - When the task was printed
+ * @returns The updated task.
+ */
+export async function markPrinted(id: string, printedAt = new Date()) {
+	return await db
+		.update(tasks)
+		.set({ lastPrintedAt: printedAt })
+		.where(eq(tasks.id, id))
+		.returning()
 }

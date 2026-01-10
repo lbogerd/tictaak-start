@@ -1,6 +1,6 @@
 import * as TabsPrimitive from "@radix-ui/react-tabs"
 
-import { cn } from "~/logic/client/cn"
+import { cn } from "~/lib/client/cn"
 
 function Tabs({
 	className,
@@ -60,4 +60,4 @@ function TabsContent({
 	)
 }
 
-export { Tabs, TabsList, TabsTrigger, TabsContent }
+export { Tabs, TabsContent, TabsList, TabsTrigger }

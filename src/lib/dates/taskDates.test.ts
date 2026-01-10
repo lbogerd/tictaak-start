@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import type { Task } from "~/logic/db/schema"
+import type { Task } from "~/lib/db/schema"
 import { getTaskPrintStatus, todayStart } from "./taskDates"
 
 // Helper to create a task object with only the fields we care about for these tests.
