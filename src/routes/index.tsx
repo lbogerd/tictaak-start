@@ -1,10 +1,11 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router"
+import { createServerFn } from "@tanstack/react-start"
 import { eq, isNull } from "drizzle-orm"
 import { Ticket } from "lucide-react"
 import { z } from "zod"
 import { CreateTask } from "~/components/tasks/CreateTask"
 import { TaskCard } from "~/components/tasks/TaskCard"
-import { createAuthServerFn } from "~/lib/auth/serverFns"
+import { authMiddleware } from "~/lib/auth/serverFns"
 import { toStartOfDay } from "~/lib/dates/taskDates"
 import { db } from "~/lib/db/db"
 import { categories } from "~/lib/db/schema"
@@ -17,81 +18,92 @@ import {
 	markPrinted,
 } from "~/lib/services/task.service"
 
-export const getCategoriesServerFn = createAuthServerFn({
+export const getCategoriesServerFn = createServerFn({
 	method: "GET",
-}).handler(async () => {
-	return await db.query.categories.findMany({
-		where: isNull(categories.archivedAt),
-	})
+	type: "dynamic",
 })
-
-export const getAllTicketsServerFn = createAuthServerFn({
-	method: "GET",
-}).handler(async () => {
-	const tickets = await getAll()
-	return tickets
-})
-
-export const getTaskSuggestionsServerFn = createAuthServerFn({
-	method: "GET",
-}).handler(async () => {
-	const tasks = await db.query.tasks.findMany({
-		columns: {
-			title: true,
-			createdAt: true,
-			lastPrintedAt: true,
-			categoryId: true,
-		},
-	})
-
-	const byTitle = new Map<
-		string,
-		{ title: string; count: number; lastUsed: Date; lastCategoryId: string }
-	>()
-
-	for (const task of tasks) {
-		const lastUsed =
-			task.lastPrintedAt && task.lastPrintedAt > task.createdAt
-				? task.lastPrintedAt
-				: task.createdAt
-		const existing = byTitle.get(task.title)
-
-		if (existing) {
-			existing.count += 1
-			if (lastUsed > existing.lastUsed) {
-				existing.lastUsed = lastUsed
-				existing.lastCategoryId = task.categoryId
-			}
-		} else {
-			byTitle.set(task.title, {
-				title: task.title,
-				count: 1,
-				lastUsed,
-				lastCategoryId: task.categoryId,
-			})
-		}
-	}
-
-	const dayMs = 24 * 60 * 60 * 1000
-	const suggestions = Array.from(byTitle.values())
-		.sort((a, b) => {
-			const scoreA = a.lastUsed.getTime() + a.count * dayMs
-			const scoreB = b.lastUsed.getTime() + b.count * dayMs
-			return scoreB - scoreA
+	.middleware([authMiddleware])
+	.handler(async () => {
+		return await db.query.categories.findMany({
+			where: isNull(categories.archivedAt),
 		})
-		.map((entry) => ({
-			title: entry.title,
-			count: entry.count,
-			lastUsed: entry.lastUsed.toISOString(),
-			categoryId: entry.lastCategoryId,
-		}))
+	})
 
-	return suggestions
+export const getAllTicketsServerFn = createServerFn({
+	method: "GET",
+	type: "dynamic",
 })
+	.middleware([authMiddleware])
+	.handler(async () => {
+		const tickets = await getAll()
+		return tickets
+	})
 
-export const createTaskServerFn = createAuthServerFn({
+export const getTaskSuggestionsServerFn = createServerFn({
+	method: "GET",
+	type: "dynamic",
+})
+	.middleware([authMiddleware])
+	.handler(async () => {
+		const tasks = await db.query.tasks.findMany({
+			columns: {
+				title: true,
+				createdAt: true,
+				lastPrintedAt: true,
+				categoryId: true,
+			},
+		})
+
+		const byTitle = new Map<
+			string,
+			{ title: string; count: number; lastUsed: Date; lastCategoryId: string }
+		>()
+
+		for (const task of tasks) {
+			const lastUsed =
+				task.lastPrintedAt && task.lastPrintedAt > task.createdAt
+					? task.lastPrintedAt
+					: task.createdAt
+			const existing = byTitle.get(task.title)
+
+			if (existing) {
+				existing.count += 1
+				if (lastUsed > existing.lastUsed) {
+					existing.lastUsed = lastUsed
+					existing.lastCategoryId = task.categoryId
+				}
+			} else {
+				byTitle.set(task.title, {
+					title: task.title,
+					count: 1,
+					lastUsed,
+					lastCategoryId: task.categoryId,
+				})
+			}
+		}
+
+		const dayMs = 24 * 60 * 60 * 1000
+		const suggestions = Array.from(byTitle.values())
+			.sort((a, b) => {
+				const scoreA = a.lastUsed.getTime() + a.count * dayMs
+				const scoreB = b.lastUsed.getTime() + b.count * dayMs
+				return scoreB - scoreA
+			})
+			.map((entry) => ({
+				title: entry.title,
+				count: entry.count,
+				lastUsed: entry.lastUsed.toISOString(),
+				categoryId: entry.lastCategoryId,
+			}))
+
+		return suggestions
+	})
+
+export const createTaskServerFn = createServerFn({
 	method: "POST",
+	type: "dynamic",
 })
+	.middleware([authMiddleware])
 	.validator((data: unknown) =>
 		z
 			.object({
@@ -106,26 +118,32 @@ export const createTaskServerFn = createAuthServerFn({
 		return await create(data)
 	})
 
-export const createCategoryServerFn = createAuthServerFn({
+export const createCategoryServerFn = createServerFn({
 	method: "POST",
+	type: "dynamic",
 })
+	.middleware([authMiddleware])
 	.validator((data: unknown) => z.object({ name: z.string() }).parse(data))
 	.handler(async ({ data }) => {
 		const result = await db.insert(categories).values(data).returning()
 		return result[0]
 	})
 
-export const archiveTaskServerFn = createAuthServerFn({
+export const archiveTaskServerFn = createServerFn({
 	method: "POST",
+	type: "dynamic",
 })
+	.middleware([authMiddleware])
 	.validator((data: unknown) => z.object({ id: z.string() }).parse(data))
 	.handler(async ({ data }) => {
 		return await archive(data.id)
 	})
 
-export const archiveCategoryServerFn = createAuthServerFn({
+export const archiveCategoryServerFn = createServerFn({
 	method: "POST",
+	type: "dynamic",
 })
+	.middleware([authMiddleware])
 	.validator((data: unknown) => z.object({ id: z.string() }).parse(data))
 	.handler(async ({ data }) => {
 		return await db
@@ -135,9 +153,11 @@ export const archiveCategoryServerFn = createAuthServerFn({
 			.returning()
 	})
 
-export const printTaskServerFn = createAuthServerFn({
+export const printTaskServerFn = createServerFn({
 	method: "POST",
+	type: "dynamic",
 })
+	.middleware([authMiddleware])
 	.validator((data: unknown) => z.object({ id: z.string() }).parse(data))
 	.handler(async ({ data }) => {
 		const task = await getById(data.id, true)

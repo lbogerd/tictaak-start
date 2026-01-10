@@ -51,18 +51,18 @@ function getClientIp(): string | undefined {
 }
 
 // CSRF middleware for state-changing operations
-const csrfMiddleware = createMiddleware({ type: "function" }).server(
-	async ({ next, data }) => {
-		const csrfToken = (data as { csrfToken?: string })?.csrfToken
+export const csrfMiddleware = createMiddleware({ type: "function" })
+	.validator(z.object({ csrfToken: z.string().min(1) }))
+	.server(async ({ next, data }) => {
+		const csrfToken = data.csrfToken
 		if (!validateCsrfToken(csrfToken)) {
 			throw new Error("Invalid CSRF token")
 		}
 		return next()
-	},
-)
+	})
 
 // Authentication middleware - checks if user is logged in
-const authMiddleware = createMiddleware({ type: "function" }).server(
+export const authMiddleware = createMiddleware({ type: "function" }).server(
 	async ({ next }) => {
 		const user = await getSessionUser()
 
@@ -79,16 +79,6 @@ const authMiddleware = createMiddleware({ type: "function" }).server(
 		})
 	},
 )
-
-// Factory function for creating authenticated server functions with CSRF protection
-export function createAuthServerFn(options?: { method?: "GET" | "POST" }) {
-	const fn = createServerFn(options).middleware([authMiddleware])
-	// Add CSRF middleware only for POST requests
-	if (options?.method === "POST") {
-		return fn.middleware([csrfMiddleware])
-	}
-	return fn
-}
 
 export const getSessionServerFn = createServerFn({
 	method: "GET",
@@ -121,7 +111,10 @@ export const loginServerFn = createServerFn({
 		// Check rate limit before attempting login
 		const rateLimit = checkLoginRateLimit(ip, data.username)
 		if (!rateLimit.allowed) {
-			const retryAfterSeconds = Math.ceil(rateLimit.retryAfterMs / 1000)
+			const retryAfterSeconds = rateLimit.retryAfterMs
+				? Math.ceil(rateLimit.retryAfterMs / 1000)
+				: 1
+
 			throw new Error(
 				`Too many login attempts. Please try again in ${retryAfterSeconds} seconds.`,
 			)

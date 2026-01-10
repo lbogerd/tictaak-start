@@ -1,123 +1,8 @@
-import { execSync } from "node:child_process"
-import fs from "node:fs"
-import path from "node:path"
-import { fileURLToPath } from "node:url"
 import tailwindcss from "@tailwindcss/vite"
 import { tanstackStart } from "@tanstack/react-start/plugin/vite"
 import viteReact from "@vitejs/plugin-react"
-import { defineConfig, type Plugin } from "vite"
+import { defineConfig } from "vite"
 import viteTsConfigPaths from "vite-tsconfig-paths"
-
-// Read package.json lazily to avoid ESM json import assertion complexities in some toolchains
-const pkg = JSON.parse(
-	fs.readFileSync(new URL("./package.json", import.meta.url), "utf8"),
-) as { version: string }
-
-function safeGit(cmd: string, fallback = "") {
-	try {
-		return execSync(cmd, { stdio: ["ignore", "pipe", "ignore"] })
-			.toString()
-			.trim()
-	} catch {
-		return fallback
-	}
-}
-
-function computeVersionInfo(mode: string) {
-	// Prefer explicit env vars first (supporting many PaaS providers), then git
-	const shaCandidate =
-		process.env.APP_GIT_SHA ||
-		process.env.GIT_SHA ||
-		process.env.GIT_REV ||
-		process.env.SOURCE_VERSION || // Dokku / Herokuish
-		process.env.HEROKU_SLUG_COMMIT ||
-		process.env.VERCEL_GIT_COMMIT_SHA ||
-		process.env.NETLIFY_COMMIT_REF ||
-		process.env.CF_PAGES_COMMIT_SHA ||
-		safeGit("git rev-parse --short HEAD") ||
-		""
-	const sha = /[a-f0-9]{12,40}/i.test(shaCandidate)
-		? shaCandidate.slice(0, 12)
-		: shaCandidate
-
-	const tag =
-		process.env.APP_GIT_TAG ||
-		process.env.GIT_TAG ||
-		safeGit("git describe --tags --abbrev=0") ||
-		null
-
-	const dirtyEnv = process.env.APP_GIT_DIRTY
-	const dirty =
-		(dirtyEnv ? dirtyEnv === "true" || dirtyEnv === "1" : false) ||
-		(!!sha && !!safeGit('test -n "$(git status --porcelain)" && echo dirty'))
-
-	const commitTime =
-		process.env.APP_COMMIT_TIME ||
-		process.env.GIT_COMMIT_TIME ||
-		safeGit("git show -s --format=%cI HEAD") ||
-		""
-	const buildTime = new Date().toISOString()
-	const info = {
-		package: pkg.version as string,
-		sha,
-		tag,
-		dirty,
-		commitTime,
-		buildTime,
-		mode,
-	}
-	if (!info.sha) {
-		console.warn(
-			"[version-plugin] No commit SHA detected. Set APP_GIT_SHA env var during build for reliable versioning.",
-		)
-	} else if (process.env.DEBUG_VERSION_INFO) {
-		console.log("[version-plugin] info", info)
-	}
-	return info
-}
-
-function versionPlugin(): Plugin {
-	let lastWritten: string | null = null
-	return {
-		name: "app-version",
-		apply: () => true,
-		config(_, { mode }) {
-			const info = computeVersionInfo(mode)
-			return {
-				define: {
-					__APP_VERSION__: JSON.stringify(info.package),
-					__APP_GIT_SHA__: JSON.stringify(info.sha),
-					__APP_GIT_TAG__: JSON.stringify(info.tag),
-					__APP_BUILD_TIME__: JSON.stringify(info.buildTime),
-					__APP_COMMIT_TIME__: JSON.stringify(info.commitTime),
-					__APP_DIRTY__: JSON.stringify(info.dirty),
-					__APP_MODE__: JSON.stringify(info.mode),
-				},
-			}
-		},
-		buildStart() {
-			this.meta.watchMode && write()
-			write()
-		},
-		configureServer() {
-			write()
-		},
-		closeBundle() {
-			write()
-		},
-	}
-
-	function write() {
-		const mode = process.env.NODE_ENV || "development"
-		const info = computeVersionInfo(mode)
-		const json = JSON.stringify(info, null, 2)
-		if (json === lastWritten) return
-		const __dirname = path.dirname(fileURLToPath(import.meta.url))
-		const outFile = path.resolve(__dirname, "public", "version.json")
-		fs.writeFileSync(outFile, `${json}\n`, "utf8")
-		lastWritten = json
-	}
-}
 
 const config = defineConfig({
 	server: {
@@ -131,7 +16,6 @@ const config = defineConfig({
 		tailwindcss(),
 		tanstackStart({ customViteReactPlugin: true }),
 		viteReact(),
-		versionPlugin(),
 	],
 })
 

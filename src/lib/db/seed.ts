@@ -1,6 +1,5 @@
 import { addDays, getDay } from "date-fns"
 import type { NewCategory, NewTask } from "~/lib/db/schema.ts"
-import { dbLogger } from "../logger/logger.ts"
 import { db } from "./db.ts"
 import { categories as categoriesTable, tasks as tasksTable } from "./schema.ts"
 
@@ -61,17 +60,11 @@ export const tasks = [
 export async function seedDevData() {
 	for (const category of categories) {
 		await db.insert(categoriesTable).values(category)
-		dbLogger.debug({ categoryName: category.name }, "Created category")
 	}
 
 	for (const task of tasks) {
 		await db.insert(tasksTable).values(task)
-		dbLogger.debug({ taskTitle: task.title }, "Created task")
 	}
 }
 
-dbLogger.info("Seeding database...")
-
 await seedDevData()
-
-dbLogger.info("Database seeded successfully!")

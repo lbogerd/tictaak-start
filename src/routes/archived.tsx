@@ -1,15 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router"
+import { createServerFn } from "@tanstack/react-start"
 import { Archive } from "lucide-react"
 import { TaskCard } from "~/components/tasks/TaskCard"
-import { createAuthServerFn } from "~/lib/auth/serverFns"
+import { authMiddleware } from "~/lib/auth/serverFns"
 import { getAll } from "~/lib/services/task.service"
 
-export const getArchivedTicketsServerFn = createAuthServerFn({
+export const getArchivedTicketsServerFn = createServerFn({
 	method: "GET",
-}).handler(async () => {
-	const tickets = await getAll(true)
-	return tickets.filter((t) => t.archivedAt !== null)
+	type: "dynamic",
 })
+	.middleware([authMiddleware])
+	.handler(async () => {
+		const tickets = await getAll(true)
+		return tickets.filter((t) => t.archivedAt !== null)
+	})
 
 export const Route = createFileRoute("/archived")({
 	component: ArchivedPage,
