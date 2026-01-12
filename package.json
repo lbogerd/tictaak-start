@@ -13,7 +13,7 @@
 		"db:down": "bash scripts/db-down.sh",
 		"start": "node .output/server/index.mjs",
 		"build": "vite build",
-		"serve": "vite preview",
+		"preview": "vite preview",
 		"test": "vitest run",
 		"fix": "pnpm exec biome lint --write --unsafe && pnpm exec biome format --write",
 		"comp:add": "pnpm exec shadcn@latest add",
