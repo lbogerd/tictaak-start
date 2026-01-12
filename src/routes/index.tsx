@@ -332,7 +332,7 @@ function App() {
 				</div>
 
 				{tasks.length > 0 ? (
-					<ul className="grid gap-4 sm:grid-cols-1 pt-4">
+					<ul className="grid gap-4 pt-4 sm:grid-cols-1">
 						{tasks.map((task) => (
 							<li key={task.id}>
 								{/* TaskCard renders the ticket preview and actions. */}
