@@ -28,15 +28,6 @@ function ArchivedPage() {
 
 	return (
 		<div className="mx-auto max-w-4xl px-4 py-8 sm:py-12">
-			<section className="mb-12 text-center">
-				<h2 className="mb-4 font-bold text-3xl tracking-tight sm:text-4xl">
-					Archived Tasks
-				</h2>
-				<p className="mx-auto max-w-2xl text-lg text-neutral-600">
-					View all your completed and archived tasks.
-				</p>
-			</section>
-
 			<div className="space-y-6">
 				<div className="flex items-center justify-between border-orange-200/50 border-b pb-4">
 					<h3 className="font-semibold text-xl">Archived</h3>

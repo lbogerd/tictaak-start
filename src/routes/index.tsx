@@ -194,16 +194,6 @@ function App() {
 
 	return (
 		<div className="mx-auto max-w-4xl px-4 py-8 sm:py-12">
-			<section className="mb-12 text-center">
-				<h2 className="mb-4 font-bold text-3xl tracking-tight sm:text-4xl">
-					Ready to get things done?
-				</h2>
-				<p className="mx-auto max-w-2xl text-lg text-neutral-600">
-					Create tasks, schedule them, and print them as physical tickets to
-					keep your focus where it matters.
-				</p>
-			</section>
-
 			<div className="mb-12">
 				{/* CreateTask owns the form UI; callbacks wire in server actions. */}
 				<CreateTask
