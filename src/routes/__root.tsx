@@ -17,6 +17,7 @@ import appCss from "../styles.css?url"
 
 export const Route = createRootRoute({
 	beforeLoad: async ({ location }) => {
+		// Gate all routes except /login behind a session check.
 		if (location.pathname === "/login") {
 			return
 		}
@@ -27,6 +28,7 @@ export const Route = createRootRoute({
 		}
 	},
 	loader: async () => {
+		// Expose the user to the root layout so header nav can update.
 		const user = await getSessionServerFn()
 		return { user }
 	},
@@ -67,6 +69,7 @@ function RootComponent() {
 	const { user } = Route.useLoaderData()
 
 	return (
+		// RootDocument renders the HTML shell and shared layout.
 		<RootDocument user={user}>
 			<Outlet />
 			<TanStackRouterDevtools />
@@ -82,6 +85,7 @@ function RootDocument({
 	user: { id: string; username: string } | null
 }) {
 	return (
+		// The root document is the only place we can render <html>/<body>.
 		<html lang="en" className="bg-yellow-50">
 			<head>
 				<HeadContent />
@@ -153,6 +157,7 @@ function LogoutButton() {
 			size="sm"
 			disabled={pending}
 			onClick={async () => {
+				// Logging out clears the session and refreshes router data.
 				setPending(true)
 				try {
 					await logoutServerFn()
