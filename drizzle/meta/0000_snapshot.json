@@ -48,9 +48,7 @@
         "Category_name_unique": {
           "name": "Category_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         }
       },
       "policies": {},

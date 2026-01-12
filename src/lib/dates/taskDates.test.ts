@@ -70,7 +70,10 @@ describe("getTaskPrintStatus", () => {
 	it("is printed for current cycle when lastPrintedAt is same as nextPrintDate (midnight)", () => {
 		const next = new Date(2025, 0, 15)
 		const lastPrinted = new Date(2025, 0, 15)
-		const task = createTask({ nextPrintDate: next, lastPrintedAt: lastPrinted })
+		const task = createTask({
+			nextPrintDate: next,
+			lastPrintedAt: lastPrinted,
+		})
 		const s = getTaskPrintStatus(task, REF_NOON)
 		expect(s.isPrintedForCurrentCycle).toBe(true)
 		expect(s.isDue).toBe(false)
@@ -80,7 +83,10 @@ describe("getTaskPrintStatus", () => {
 	it("is printed for current cycle when lastPrintedAt is after nextPrintDate (same day later)", () => {
 		const next = new Date(2025, 0, 15)
 		const lastPrinted = new Date(2025, 0, 15, 8, 0, 0)
-		const task = createTask({ nextPrintDate: next, lastPrintedAt: lastPrinted })
+		const task = createTask({
+			nextPrintDate: next,
+			lastPrintedAt: lastPrinted,
+		})
 		const s = getTaskPrintStatus(task, REF_NOON)
 		expect(s.isPrintedForCurrentCycle).toBe(true)
 		expect(s.isDue).toBe(false)
