@@ -5,6 +5,7 @@ import type { Category, Task } from "~/lib/db/schema"
 
 type PrintableTask = Task & { category: Category }
 
+// Factory to encapsulate the printer configuration in one place.
 function createPrinter(printerUrl: string) {
 	return new ThermalPrinter({
 		type: PrinterTypes.EPSON,
@@ -13,6 +14,7 @@ function createPrinter(printerUrl: string) {
 	})
 }
 
+// Converts a task record into a physical ticket using a thermal printer.
 export async function printTaskTicket(task: PrintableTask) {
 	const printerUrl = env.PRINTER_URL
 	if (!printerUrl) {
@@ -25,6 +27,7 @@ export async function printTaskTicket(task: PrintableTask) {
 		throw new Error(`Thermal printer not reachable at ${printerUrl}.`)
 	}
 
+	// Ticket layout: header, task details, then a cut command.
 	printer.alignCenter()
 	printer.setTextDoubleHeight()
 	printer.bold(true)

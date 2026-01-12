@@ -18,6 +18,7 @@ import {
 	markPrinted,
 } from "~/lib/services/task.service"
 
+// Server functions act like API endpoints and run on the server only.
 export const getCategoriesServerFn = createServerFn({
 	method: "GET",
 	type: "dynamic",
@@ -45,6 +46,7 @@ export const getTaskSuggestionsServerFn = createServerFn({
 })
 	.middleware([authMiddleware])
 	.handler(async () => {
+		// Build lightweight suggestions based on historical tasks.
 		const tasks = await db.query.tasks.findMany({
 			columns: {
 				title: true,
@@ -83,6 +85,7 @@ export const getTaskSuggestionsServerFn = createServerFn({
 		}
 
 		const dayMs = 24 * 60 * 60 * 1000
+		// Higher score = used more recently + more frequently.
 		const suggestions = Array.from(byTitle.values())
 			.sort((a, b) => {
 				const scoreA = a.lastUsed.getTime() + a.count * dayMs
@@ -176,6 +179,7 @@ export const printTaskServerFn = createServerFn({
 export const Route = createFileRoute("/")({
 	component: App,
 	loader: async () => {
+		// Load all data needed for the landing screen in one request.
 		const categories = await getCategoriesServerFn()
 		const tasks = await getAllTicketsServerFn()
 		const suggestions = await getTaskSuggestionsServerFn()
@@ -201,6 +205,7 @@ function App() {
 			</section>
 
 			<div className="mb-12">
+				{/* CreateTask owns the form UI; callbacks wire in server actions. */}
 				<CreateTask
 					categories={categories}
 					suggestions={suggestions}
@@ -224,6 +229,7 @@ function App() {
 						router.invalidate()
 					}}
 					onPlanTask={async (input) => {
+						// Convert user-friendly schedule choices into numeric weekdays.
 						const recursOnDays =
 							input.schedulingType === "recurring"
 								? input.recurringType === "every-day"
@@ -267,6 +273,7 @@ function App() {
 					<ul className="grid gap-4 sm:grid-cols-1">
 						{tasks.map((task) => (
 							<li key={task.id}>
+								{/* TaskCard renders the ticket preview and actions. */}
 								<TaskCard
 									task={task}
 									onPrint={async (task) => {
