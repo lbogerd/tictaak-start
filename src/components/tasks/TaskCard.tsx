@@ -46,8 +46,8 @@ export function TaskCard({
 			)}
 		>
 			{/* Ticket "punches" */}
-			<div className="-left-3 -translate-y-1/2 absolute top-1/2 z-10 h-6 w-6 rounded-full bg-orange-50" />
-			<div className="-right-3 -translate-y-1/2 absolute top-1/2 z-10 h-6 w-6 rounded-full bg-orange-50" />
+			<div className="absolute top-1/2 -left-3 z-10 h-6 w-6 -translate-y-1/2 rounded-full bg-orange-50" />
+			<div className="absolute top-1/2 -right-3 z-10 h-6 w-6 -translate-y-1/2 rounded-full bg-orange-50" />
 
 			{/* Perforated line - aligned with side punches */}
 			<div className="absolute top-1/2 h-0 w-full border-orange-100 border-t-2 border-dashed" />
