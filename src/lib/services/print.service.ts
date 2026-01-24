@@ -27,25 +27,35 @@ export async function printTaskTicket(task: PrintableTask) {
 		throw new Error(`Thermal printer not reachable at ${printerUrl}.`)
 	}
 
-	// Ticket layout: header, task details, then a cut command.
+	// header
 	printer.alignCenter()
-	printer.setTextDoubleHeight()
-	printer.bold(true)
-	printer.println("TASK")
-	printer.bold(false)
-	printer.setTextNormal()
-	printer.drawLine()
+	printer.println("TicTaak")
+	printer.drawLine("=")
+
+	// body
 	printer.alignLeft()
 
-	printer.println(`Title: ${task.title}`)
-	printer.println(`Category: ${task.category.name}`)
-	if (task.nextPrintDate) {
-		printer.println(
-			`Scheduled: ${format(new Date(task.nextPrintDate), "EEE, MMM d, yyyy")}`,
-		)
-	}
-	printer.println(`Printed: ${format(new Date(), "EEE, MMM d, yyyy h:mm a")}`)
+	// title
+	printer.bold(true)
+	printer.setTextQuadArea()
+
 	printer.newLine()
+	printer.println(`${task.title}`)
+
+	printer.setTextNormal()
+	printer.bold(false)
+
+	// details
+	printer.newLine()
+	printer.println(`category: ${task.category.name}`)
+
+	printer.newLine()
+	printer.newLine()
+	printer.println(format(task.createdAt, "dd/MM/yyyy HH:mm"))
+	printer.newLine()
+
+	// footer
+	printer.drawLine("=")
 	printer.cut()
 
 	await printer.execute()
