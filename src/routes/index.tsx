@@ -18,6 +18,7 @@ import {
 	getById,
 	getDue,
 	markPrinted,
+	skipDue,
 } from "~/lib/services/task.service"
 
 // Server functions act like API endpoints and run on the server only.
@@ -205,6 +206,30 @@ export const printDueTasksServerFn = createServerFn({
 		return updatedTasks
 	})
 
+/**
+ * Skip a due task without printing it.
+ * Marks the task as handled for the current cycle while preserving
+ * future scheduling (nextPrintDate and recursOnDays remain unchanged).
+ */
+export const skipDueTaskServerFn = createServerFn({
+	method: "POST",
+	type: "dynamic",
+})
+	.middleware([authMiddleware])
+	.validator((data: unknown) => z.object({ id: z.string() }).parse(data))
+	.handler(async ({ data }) => {
+		const task = await getById(data.id, false)
+		if (!task) {
+			throw new Error("Task not found.")
+		}
+		if (task.archivedAt) {
+			throw new Error("Task is archived.")
+		}
+
+		const updated = await skipDue(task.id)
+		return updated[0]
+	})
+
 export const Route = createFileRoute("/")({
 	component: App,
 	loader: async () => {
@@ -228,6 +253,7 @@ type TaskListSectionProps = {
 	onPrint: (task: Task) => Promise<void>
 	onArchive: (task: Task) => Promise<void>
 	onEdit: (task: Task) => void
+	onSkip?: (task: Task) => Promise<void>
 }
 
 function TaskListSection({
@@ -238,6 +264,7 @@ function TaskListSection({
 	onPrint,
 	onArchive,
 	onEdit,
+	onSkip,
 }: TaskListSectionProps) {
 	return (
 		<div>
@@ -259,6 +286,13 @@ function TaskListSection({
 									await onArchive(task)
 								}}
 								onEdit={onEdit}
+								onSkip={
+									onSkip
+										? async (task) => {
+												await onSkip(task)
+											}
+										: undefined
+								}
 							/>
 						</li>
 					))}
@@ -365,6 +399,10 @@ function App() {
 						}}
 						onArchive={async (task) => {
 							await archiveTaskServerFn({ data: { id: task.id } })
+							router.invalidate()
+						}}
+						onSkip={async (task) => {
+							await skipDueTaskServerFn({ data: { id: task.id } })
 							router.invalidate()
 						}}
 						onEdit={() => console.log("Editing task")}

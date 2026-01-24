@@ -15,6 +15,7 @@ import {
 	getById,
 	getDue,
 	getUpcoming,
+	skipDue,
 } from "./task.service"
 
 describe("taskService", () => {
@@ -211,6 +212,98 @@ describe("taskService", () => {
 			expect(result).toBeDefined()
 			expect(result[0].title).toBe(newTask.title)
 			expect(result[0].categoryId).toBe(newTask.categoryId)
+		})
+	})
+
+	describe("skipDue", () => {
+		it("should skip a due task by updating lastPrintedAt without changing nextPrintDate or recursOnDays", async () => {
+			const yesterday = addDays(new Date(), -1)
+			const twoDaysAgo = addDays(new Date(), -2)
+
+			// Create a due task with recurring days
+			await db.insert(schema.tasks).values({
+				id: "skip-due-task",
+				title: "Skip Due Task",
+				categoryId: "cat-1",
+				nextPrintDate: yesterday,
+				lastPrintedAt: twoDaysAgo,
+				recursOnDays: [1, 3, 5], // Mon, Wed, Fri
+			})
+
+			const before = await getById("skip-due-task")
+			expect(before).toBeDefined()
+			if (!before) throw new Error("Task not found")
+
+			const result = await skipDue("skip-due-task")
+			expect(result).toBeDefined()
+			expect(result[0].id).toBe("skip-due-task")
+
+			const after = await getById("skip-due-task")
+			expect(after).toBeDefined()
+			if (!after) throw new Error("Task not found after skip")
+
+			// lastPrintedAt should be updated to now (after skipping)
+			expect(after.lastPrintedAt).not.toEqual(before.lastPrintedAt)
+			expect(after.lastPrintedAt?.getTime()).toBeGreaterThan(
+				before.lastPrintedAt?.getTime() ?? 0,
+			)
+			// nextPrintDate should remain unchanged
+			expect(after.nextPrintDate?.getTime()).toEqual(
+				before.nextPrintDate?.getTime(),
+			)
+			// recursOnDays should remain unchanged
+			expect(after.recursOnDays).toEqual(before.recursOnDays)
+		})
+
+		it("should remove task from due list after skipping", async () => {
+			const yesterday = addDays(new Date(), -1)
+			const twoDaysAgo = addDays(new Date(), -2)
+
+			// Create a due task
+			await db.insert(schema.tasks).values({
+				id: "skip-due-check",
+				title: "Skip Due Check",
+				categoryId: "cat-1",
+				nextPrintDate: yesterday,
+				lastPrintedAt: twoDaysAgo,
+			})
+
+			// Verify it's in the due list
+			const dueBefore = await getDue()
+			expect(dueBefore.some((t) => t.id === "skip-due-check")).toBe(true)
+
+			// Skip the task
+			await skipDue("skip-due-check")
+
+			// Verify it's no longer in the due list
+			const dueAfter = await getDue()
+			expect(dueAfter.some((t) => t.id === "skip-due-check")).toBe(false)
+		})
+
+		it("should preserve recurring configuration for future instances", async () => {
+			const yesterday = addDays(new Date(), -1)
+			const twoDaysAgo = addDays(new Date(), -2)
+			const recurringDays = [0, 2, 4, 6] // Sun, Tue, Thu, Sat
+
+			await db.insert(schema.tasks).values({
+				id: "recurring-skip",
+				title: "Recurring Skip Task",
+				categoryId: "cat-1",
+				nextPrintDate: yesterday,
+				lastPrintedAt: twoDaysAgo,
+				recursOnDays: recurringDays,
+			})
+
+			await skipDue("recurring-skip")
+
+			const after = await getById("recurring-skip")
+			expect(after).toBeDefined()
+			if (!after) throw new Error("Task not found after skip")
+
+			// Recurring days should be untouched
+			expect(after.recursOnDays).toEqual(recurringDays)
+			// The task should still exist with its recurring configuration
+			expect(after.archivedAt).toBeNull()
 		})
 	})
 })

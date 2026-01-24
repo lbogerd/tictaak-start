@@ -6,6 +6,7 @@ import {
 	Clock4,
 	Printer,
 	RotateCcw,
+	SkipForward,
 	Tags,
 } from "lucide-react"
 import { cn } from "~/lib/client/cn"
@@ -15,13 +16,16 @@ import { Badge } from "../ui/Badge"
 import { Button } from "../ui/Button"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card"
 
+type TaskWithCategory = Task & { category: Category }
+
 type TaskCardProps = {
-	task: Task & { category: Category }
+	task: TaskWithCategory
 	className?: string
-	onPrint?: (task: Task) => void
-	onArchive?: (task: Task) => void
-	onUnarchive?: (task: Task) => void
-	onEdit?: (task: Task) => void
+	onPrint?: (task: TaskWithCategory) => void
+	onArchive?: (task: TaskWithCategory) => void
+	onUnarchive?: (task: TaskWithCategory) => void
+	onEdit?: (task: TaskWithCategory) => void
+	onSkip?: (task: TaskWithCategory) => void
 }
 
 export function TaskCard({
@@ -31,6 +35,7 @@ export function TaskCard({
 	onArchive,
 	onUnarchive,
 	onEdit,
+	onSkip,
 }: TaskCardProps) {
 	const isArchived = Boolean(task.archivedAt)
 	const { nextPrintDate, isDue, isUpcoming, isPrintedForCurrentCycle } =
@@ -66,6 +71,19 @@ export function TaskCard({
 								className="hidden"
 							>
 								{/* Reserved for future edit action */}
+							</Button>
+						)}
+						{/* Skip button - only show for due tasks that aren't archived */}
+						{onSkip && isDue && !isArchived && (
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={() => onSkip(task)}
+								title="Skip this occurrence"
+								className="h-9 border-amber-200 text-amber-600 hover:bg-amber-50"
+							>
+								<SkipForward className="mr-2 h-4 w-4" /> Skip
 							</Button>
 						)}
 						{onPrint && !isArchived && (

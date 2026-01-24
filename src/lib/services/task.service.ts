@@ -140,3 +140,21 @@ export async function markPrinted(id: string, printedAt = new Date()) {
 		.where(eq(tasks.id, id))
 		.returning()
 }
+
+/**
+ * Skip a due task by marking it as printed without actually printing.
+ * This removes the task from the due list while preserving nextPrintDate
+ * and recursOnDays so future instances are unaffected.
+ * @param id - The ID of the task to skip
+ * @param skippedAt - When the task was skipped (defaults to now)
+ * @returns The updated task.
+ */
+export async function skipDue(id: string, skippedAt = new Date()) {
+	// We only update lastPrintedAt to mark the current cycle as handled.
+	// nextPrintDate and recursOnDays remain unchanged for future scheduling.
+	return await db
+		.update(tasks)
+		.set({ lastPrintedAt: skippedAt })
+		.where(eq(tasks.id, id))
+		.returning()
+}
