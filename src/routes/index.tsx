@@ -218,6 +218,58 @@ export const Route = createFileRoute("/")({
 	},
 })
 
+type Task = Awaited<ReturnType<typeof getAllTicketsServerFn>>[number]
+
+type TaskListSectionProps = {
+	title: string
+	tasks: Task[]
+	headerAction?: React.ReactNode
+	emptyState?: React.ReactNode
+	onPrint: (task: Task) => Promise<void>
+	onArchive: (task: Task) => Promise<void>
+	onEdit: (task: Task) => void
+}
+
+function TaskListSection({
+	title,
+	tasks,
+	headerAction,
+	emptyState,
+	onPrint,
+	onArchive,
+	onEdit,
+}: TaskListSectionProps) {
+	return (
+		<div>
+			<div className="flex items-center justify-between border-orange-200/50 border-b pb-4">
+				<h3 className="font-semibold text-xl">{title}</h3>
+				{headerAction}
+			</div>
+
+			{tasks.length > 0 ? (
+				<ul className="grid gap-4 pt-4 sm:grid-cols-1">
+					{tasks.map((task) => (
+						<li key={task.id}>
+							<TaskCard
+								task={task}
+								onPrint={async (task) => {
+									await onPrint(task)
+								}}
+								onArchive={async (task) => {
+									await onArchive(task)
+								}}
+								onEdit={onEdit}
+							/>
+						</li>
+					))}
+				</ul>
+			) : (
+				emptyState
+			)}
+		</div>
+	)
+}
+
 function App() {
 	const { categories, tasks, dueTasks, suggestions } = Route.useLoaderData()
 	const router = useRouter()
@@ -282,76 +334,48 @@ function App() {
 			</div>
 
 			{dueTasks.length > 0 && (
-				<div className="space-y-6">
-					<div className="flex items-center justify-between border-orange-200/50 border-b pb-4">
-						<h3 className="font-semibold text-xl">Due Today</h3>
-
-						<Button
-							type="button"
-							disabled={dueTasks.length === 0}
-							onClick={async () => {
-								await printDueTasksServerFn()
-								router.invalidate()
-							}}
-							gradient
-							size="sm"
-							className="h-9 px-4"
-						>
-							<Printer className="mr-2 h-4 w-4" />
-							Print all due
-						</Button>
-					</div>
-
-					<ul className="grid gap-4 sm:grid-cols-1">
-						{dueTasks.map((task) => (
-							<li key={task.id}>
-								<TaskCard
-									task={task}
-									onPrint={async (task) => {
-										await printTaskServerFn({ data: { id: task.id } })
-										router.invalidate()
-									}}
-									onArchive={async (task) => {
-										await archiveTaskServerFn({ data: { id: task.id } })
-										router.invalidate()
-									}}
-									onEdit={() => console.log("Editing task:", task)}
-								/>
-							</li>
-						))}
-					</ul>
+				<div className="mb-12 space-y-6">
+					<TaskListSection
+						title="Due Today"
+						tasks={dueTasks}
+						headerAction={
+							<Button
+								type="button"
+								disabled={dueTasks.length === 0}
+								onClick={async () => {
+									await printDueTasksServerFn()
+									router.invalidate()
+								}}
+								gradient
+								size="sm"
+								className="h-9 px-4"
+							>
+								<Printer className="mr-2 h-4 w-4" />
+								Print all due
+							</Button>
+						}
+						onPrint={async (task) => {
+							await printTaskServerFn({ data: { id: task.id } })
+							router.invalidate()
+						}}
+						onArchive={async (task) => {
+							await archiveTaskServerFn({ data: { id: task.id } })
+							router.invalidate()
+						}}
+						onEdit={() => console.log("Editing task")}
+					/>
 				</div>
 			)}
 
-			<div>
-				<div className="flex items-center justify-between border-orange-200/50 border-b pb-4">
-					<h3 className="font-semibold text-xl">Your Tasks</h3>
+			<TaskListSection
+				title="Your Tasks"
+				tasks={tasks}
+				headerAction={
 					<span className="rounded-full bg-orange-100 px-3 py-1 font-medium text-orange-700 text-sm">
 						{tasks.length} {tasks.length === 1 ? "task" : "tasks"}
 					</span>
-				</div>
-
-				{tasks.length > 0 ? (
-					<ul className="grid gap-4 pt-4 sm:grid-cols-1">
-						{tasks.map((task) => (
-							<li key={task.id}>
-								{/* TaskCard renders the ticket preview and actions. */}
-								<TaskCard
-									task={task}
-									onPrint={async (task) => {
-										await printTaskServerFn({ data: { id: task.id } })
-										router.invalidate()
-									}}
-									onArchive={async (task) => {
-										await archiveTaskServerFn({ data: { id: task.id } })
-										router.invalidate()
-									}}
-									onEdit={() => console.log("Editing task:", task)}
-								/>
-							</li>
-						))}
-					</ul>
-				) : (
+				}
+				emptyState={
 					<div className="flex flex-col items-center justify-center rounded-3xl border-2 border-orange-200 border-dashed bg-white/50 py-20 text-center">
 						<div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-100 text-orange-500">
 							<Ticket className="h-8 w-8" />
@@ -362,8 +386,17 @@ function App() {
 							productivity.
 						</p>
 					</div>
-				)}
-			</div>
+				}
+				onPrint={async (task) => {
+					await printTaskServerFn({ data: { id: task.id } })
+					router.invalidate()
+				}}
+				onArchive={async (task) => {
+					await archiveTaskServerFn({ data: { id: task.id } })
+					router.invalidate()
+				}}
+				onEdit={() => console.log("Editing task")}
+			/>
 		</div>
 	)
 }
