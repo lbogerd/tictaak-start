@@ -291,13 +291,18 @@ function App() {
 						router.invalidate()
 					}}
 					onCreateTask={async (input) => {
-						await createTaskServerFn({
+						const createdTask = await createTaskServerFn({
 							data: {
 								title: input.text,
 								categoryId: input.categoryId,
 								nextPrintDate: toStartOfDay(new Date()),
 							},
 						})
+						// Print immediately if task is due today
+						if (createdTask && createdTask.length > 0) {
+							const task = createdTask[0]
+							await printTaskServerFn({ data: { id: task.id } })
+						}
 						router.invalidate()
 					}}
 					onPlanTask={async (input) => {
