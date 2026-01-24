@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start"
 import { Archive } from "lucide-react"
 import { TaskCard } from "~/components/tasks/TaskCard"
 import { authMiddleware } from "~/lib/auth/serverFns"
+import type { Category, Task } from "~/lib/db/schema"
 import { getAll } from "~/lib/services/task.service"
 
 export const getArchivedTicketsServerFn = createServerFn({
@@ -38,7 +39,7 @@ function ArchivedPage() {
 
 				{tasks.length > 0 ? (
 					<ul className="grid gap-4 sm:grid-cols-1">
-						{tasks.map((task) => (
+						{tasks.map((task: Task & { category: Category }) => (
 							<li key={task.id}>
 								<TaskCard task={task} />
 							</li>

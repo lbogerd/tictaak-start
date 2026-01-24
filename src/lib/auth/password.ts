@@ -2,18 +2,6 @@ import { randomBytes, scrypt, timingSafeEqual } from "node:crypto"
 import { promisify } from "node:util"
 
 const scryptAsync = promisify(scrypt)
-
-// OWASP recommended scrypt parameters
-// N (cost): 2^17 = 131072 (memory/CPU cost)
-// r (block size): 8
-// p (parallelization): 1
-const SCRYPT_PARAMS = {
-	N: 131072,
-	r: 8,
-	p: 1,
-	maxmem: 134220800, // 128MB, needed for high N values
-}
-
 const KEY_LENGTH = 64
 
 export type PasswordHash = {
@@ -23,12 +11,7 @@ export type PasswordHash = {
 
 export async function hashPassword(password: string): Promise<PasswordHash> {
 	const salt = randomBytes(16).toString("hex")
-	const derived = (await scryptAsync(
-		password,
-		salt,
-		KEY_LENGTH,
-		SCRYPT_PARAMS,
-	)) as Buffer
+	const derived = (await scryptAsync(password, salt, KEY_LENGTH)) as Buffer
 	return { hash: derived.toString("hex"), salt }
 }
 
@@ -37,12 +20,7 @@ export async function verifyPassword(
 	salt: string,
 	expectedHash: string,
 ): Promise<boolean> {
-	const derived = (await scryptAsync(
-		password,
-		salt,
-		KEY_LENGTH,
-		SCRYPT_PARAMS,
-	)) as Buffer
+	const derived = (await scryptAsync(password, salt, KEY_LENGTH)) as Buffer
 	const expected = Buffer.from(expectedHash, "hex")
 	return (
 		expected.length === derived.length && timingSafeEqual(expected, derived)
