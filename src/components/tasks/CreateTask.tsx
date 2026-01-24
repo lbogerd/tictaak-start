@@ -517,6 +517,12 @@ function CategoryDropdown({
 	onArchiveCategory?: (id: string) => Promise<void>
 }) {
 	const [isAddingNew, setIsAddingNew] = useState(false)
+	const [isOpen, setIsOpen] = useState(false)
+	const [localCategories, setLocalCategories] = useState(categories)
+
+	useEffect(() => {
+		setLocalCategories(categories)
+	}, [categories])
 
 	const handleAddNew = () => {
 		setIsAddingNew(true)
@@ -543,6 +549,8 @@ function CategoryDropdown({
 	return (
 		<Select
 			value={value}
+			open={isOpen}
+			onOpenChange={setIsOpen}
 			onValueChange={(selectedValue) => {
 				if (selectedValue === "add-new") {
 					handleAddNew()
@@ -566,38 +574,48 @@ function CategoryDropdown({
 			</SelectTrigger>
 
 			<SelectContent className="rounded-xl border-orange-100 shadow-xl">
-				{categories.map((category) => (
-					<SelectItem
+				{localCategories.map((category) => (
+					<div
 						key={category.id}
-						value={category.id}
-						className="group rounded-lg pr-2 focus:bg-orange-50 focus:text-orange-700"
+						className="group relative flex w-full cursor-default select-none items-center rounded-lg pr-2 text-sm transition-colors hover:bg-orange-50"
 					>
-						<span className="flex w-full items-center justify-between gap-3">
-							<span>{category.name}</span>
-							{onArchiveCategory && (
-								<button
-									type="button"
-									className="rounded-md p-1 text-neutral-400 opacity-0 transition hover:bg-orange-100 hover:text-orange-600 group-hover:opacity-100"
-									onPointerDown={(event) => {
-										event.preventDefault()
-										event.stopPropagation()
-									}}
-									onClick={async (event) => {
-										event.preventDefault()
-										event.stopPropagation()
-										await onArchiveCategory(category.id)
-										if (value === category.id) {
-											onChange?.("")
-										}
-									}}
-									aria-label={`Delete category ${category.name}`}
-									title="Delete category"
-								>
-									<Trash2 className="h-4 w-4" />
-								</button>
-							)}
-						</span>
-					</SelectItem>
+						<SelectItem
+							value={category.id}
+							className="flex-1 rounded-lg pr-8 focus:bg-orange-50 focus:text-orange-700"
+						>
+							{category.name}
+						</SelectItem>
+						{onArchiveCategory && (
+							<button
+								type="button"
+								className="z-10 rounded-md p-1 text-neutral-400 opacity-0 transition hover:bg-orange-100 hover:text-orange-600 group-hover:opacity-100"
+								onPointerDown={(event) => {
+									event.preventDefault()
+									event.stopPropagation()
+								}}
+								onMouseDown={(event) => {
+									event.preventDefault()
+									event.stopPropagation()
+								}}
+								onClick={async (event) => {
+									event.preventDefault()
+									event.stopPropagation()
+									setIsOpen(false)
+									setLocalCategories((prev) =>
+										prev.filter((item) => item.id !== category.id),
+									)
+									if (value === category.id) {
+										onChange?.("")
+									}
+									await onArchiveCategory(category.id)
+								}}
+								aria-label={`Delete category ${category.name}`}
+								title="Delete category"
+							>
+								<Trash2 className="h-4 w-4" />
+							</button>
+						)}
+					</div>
 				))}
 
 				<Separator className="my-1 bg-orange-100" />
