@@ -16,9 +16,9 @@ import { printTaskTicket } from "~/lib/services/print.service"
 import {
 	archive,
 	create,
-	getPaginated,
 	getById,
 	getDue,
+	getPaginated,
 	markPrinted,
 	skipDue,
 } from "~/lib/services/task.service"
