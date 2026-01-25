@@ -59,7 +59,6 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
 	const router = useRouter()
 	const { redirect: redirectTo } = Route.useSearch()
-	const { csrfToken } = Route.useLoaderData()
 	const [error, setError] = useState<string | null>(null)
 	const [pending, startTransition] = useTransition()
 	const usernameId = useId()

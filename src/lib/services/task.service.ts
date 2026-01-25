@@ -1,4 +1,4 @@
-import { and, eq, gt, isNull, lt, lte } from "drizzle-orm"
+import { and, count, eq, gt, isNull, lt, lte, not } from "drizzle-orm"
 import { todayStart } from "~/lib/dates/taskDates"
 import { db } from "~/lib/db/db"
 import { type NewTask, tasks } from "~/lib/db/schema"
@@ -52,6 +52,37 @@ export async function getAll(
 			category: true,
 		},
 	})
+}
+
+export async function getPaginated({
+	includeArchived = false,
+	archivedOnly = false,
+	skip = 0,
+	take = 10,
+}: {
+	includeArchived?: boolean
+	archivedOnly?: boolean
+	skip?: number
+	take?: number
+}) {
+	const where = archivedOnly
+		? not(isNull(tasks.archivedAt))
+		: includeArchived
+			? undefined
+			: isNull(tasks.archivedAt)
+
+	const [items, totalResult] = await Promise.all([
+		db.query.tasks.findMany({
+			where,
+			offset: skip,
+			limit: take,
+			with: { category: true },
+		}),
+		db.select({ count: count() }).from(tasks).where(where),
+	])
+
+	const total = Number(totalResult[0]?.count ?? 0)
+	return { items, total }
 }
 
 /**

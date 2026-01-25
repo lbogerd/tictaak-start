@@ -6,6 +6,8 @@ import { z } from "zod"
 import { CreateTask } from "~/components/tasks/CreateTask"
 import { TaskCard } from "~/components/tasks/TaskCard"
 import { Button } from "~/components/ui/Button"
+import { Pagination } from "~/components/ui/Pagination"
+import { usePageClamp } from "~/hooks/usePageClamp"
 import { authMiddleware } from "~/lib/auth/serverFns"
 import { toStartOfDay } from "~/lib/dates/taskDates"
 import { db } from "~/lib/db/db"
@@ -14,7 +16,7 @@ import { printTaskTicket } from "~/lib/services/print.service"
 import {
 	archive,
 	create,
-	getAll,
+	getPaginated,
 	getById,
 	getDue,
 	markPrinted,
@@ -38,9 +40,37 @@ export const getAllTicketsServerFn = createServerFn({
 	type: "dynamic",
 })
 	.middleware([authMiddleware])
-	.handler(async () => {
-		const tickets = await getAll()
-		return tickets
+	.validator((data: unknown) =>
+		z
+			.object({
+				page: z.number().int().min(1).default(1),
+				pageSize: z.number().int().min(1).max(100).default(10),
+			})
+			.parse(data ?? {}),
+	)
+	.handler(async ({ data }) => {
+		const requestedPage = data.page
+		const pageSize = data.pageSize
+		const skip = (requestedPage - 1) * pageSize
+		const { items, total } = await getPaginated({
+			includeArchived: false,
+			skip,
+			take: pageSize,
+		})
+		const totalPages = Math.max(1, Math.ceil(total / pageSize))
+		const safePage = Math.min(Math.max(requestedPage, 1), totalPages)
+
+		if (safePage !== requestedPage) {
+			const safeSkip = (safePage - 1) * pageSize
+			const retry = await getPaginated({
+				includeArchived: false,
+				skip: safeSkip,
+				take: pageSize,
+			})
+			return { tasks: retry.items, total: retry.total, page: safePage }
+		}
+
+		return { tasks: items, total, page: safePage }
 	})
 
 export const getDueTicketsServerFn = createServerFn({
@@ -231,19 +261,36 @@ export const skipDueTaskServerFn = createServerFn({
 	})
 
 export const Route = createFileRoute("/")({
+	validateSearch: z.object({
+		page: z.coerce.number().min(1).default(1),
+	}),
 	component: App,
-	loader: async () => {
+	loader: async ({ location }) => {
 		// Load all data needed for the landing screen in one request.
+		const pageSize = 10
+		const searchParams = new URLSearchParams(location.search ?? "")
+		const requestedPage = Number(searchParams.get("page") ?? "1") || 1
 		const categories = await getCategoriesServerFn()
-		const tasks = await getAllTicketsServerFn()
+		const { tasks, total, page } = await getAllTicketsServerFn({
+			data: { page: requestedPage, pageSize },
+		})
 		const dueTasks = await getDueTicketsServerFn()
 		const suggestions = await getTaskSuggestionsServerFn()
 
-		return { categories, tasks, dueTasks, suggestions }
+		return {
+			categories,
+			tasks,
+			totalTasks: total,
+			dueTasks,
+			suggestions,
+			page,
+			pageSize,
+			requestedPage,
+		}
 	},
 })
 
-type Task = Awaited<ReturnType<typeof getAllTicketsServerFn>>[number]
+type Task = Awaited<ReturnType<typeof getAllTicketsServerFn>>["tasks"][number]
 
 type TaskListSectionProps = {
 	title: string
@@ -305,8 +352,26 @@ function TaskListSection({
 }
 
 function App() {
-	const { categories, tasks, dueTasks, suggestions } = Route.useLoaderData()
+	const {
+		categories,
+		tasks,
+		totalTasks,
+		dueTasks,
+		suggestions,
+		page,
+		pageSize,
+		requestedPage,
+	} = Route.useLoaderData()
 	const router = useRouter()
+
+	const totalPages = Math.max(1, Math.ceil(totalTasks / pageSize))
+	const currentPage = usePageClamp(
+		requestedPage ?? page ?? 1,
+		totalPages,
+		async (nextPage) => {
+			await router.navigate({ to: "/", search: { page: nextPage } })
+		},
+	)
 
 	return (
 		<div className="mx-auto max-w-4xl px-4 py-8 sm:py-12">
@@ -415,7 +480,7 @@ function App() {
 				tasks={tasks}
 				headerAction={
 					<span className="rounded-full bg-orange-100 px-3 py-1 font-medium text-orange-700 text-sm">
-						{tasks.length} {tasks.length === 1 ? "task" : "tasks"}
+						{totalTasks} {totalTasks === 1 ? "task" : "tasks"}
 					</span>
 				}
 				emptyState={
@@ -439,6 +504,14 @@ function App() {
 					router.invalidate()
 				}}
 				onEdit={() => console.log("Editing task")}
+			/>
+
+			<Pagination
+				currentPage={currentPage}
+				totalPages={totalPages}
+				onChange={async (nextPage) => {
+					await router.navigate({ to: "/", search: { page: nextPage } })
+				}}
 			/>
 		</div>
 	)
