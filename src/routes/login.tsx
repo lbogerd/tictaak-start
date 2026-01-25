@@ -76,9 +76,22 @@ function LoginPage() {
 		const username = String(formData.get("username") || "").trim()
 		const password = String(formData.get("password") || "")
 
+		// Read CSRF token from cookie (set by the loader)
+		const csrfTokenFromCookie = document.cookie
+			.split("; ")
+			.find((row) => row.startsWith("tictaak_csrf="))
+			?.split("=")[1]
+
+		if (!csrfTokenFromCookie) {
+			setError("Security token missing. Please refresh the page.")
+			return
+		}
+
 		startTransition(async () => {
 			try {
-				await loginServerFn({ data: { username, password, csrfToken } })
+				await loginServerFn({
+					data: { username, password, csrfToken: csrfTokenFromCookie },
+				})
 				await router.invalidate()
 				await router.navigate({ to: safeRedirect })
 			} catch (err) {
