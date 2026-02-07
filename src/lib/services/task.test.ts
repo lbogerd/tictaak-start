@@ -14,6 +14,7 @@ import {
 	getByCategoryId,
 	getById,
 	getDue,
+	getPaginated,
 	getUpcoming,
 	skipDue,
 } from "./task.service"
@@ -106,6 +107,62 @@ describe("taskService", () => {
 		it("should return empty array if no tasks exist", async () => {
 			const result = await getAll(false, 1000, 10)
 			expect(result.length).toBe(0)
+		})
+
+		it("should return tasks ordered by newest created first", async () => {
+			await db.insert(schema.tasks).values([
+				{
+					id: "older-task",
+					title: "Older Task",
+					categoryId: "cat-1",
+					createdAt: new Date("2024-01-01T00:00:00.000Z"),
+				},
+				{
+					id: "newer-task",
+					title: "Newer Task",
+					categoryId: "cat-1",
+					createdAt: new Date("2024-01-02T00:00:00.000Z"),
+				},
+			])
+
+			const result = await getAll()
+			const olderIndex = result.findIndex((t) => t.id === "older-task")
+			const newerIndex = result.findIndex((t) => t.id === "newer-task")
+
+			expect(newerIndex).toBeGreaterThanOrEqual(0)
+			expect(olderIndex).toBeGreaterThanOrEqual(0)
+			expect(newerIndex).toBeLessThan(olderIndex)
+		})
+	})
+
+	describe("getPaginated", () => {
+		it("should return paginated tasks ordered by newest created first", async () => {
+			await db.insert(schema.tasks).values([
+				{
+					id: "page-older-task",
+					title: "Page Older Task",
+					categoryId: "cat-1",
+					createdAt: new Date("2024-01-03T00:00:00.000Z"),
+				},
+				{
+					id: "page-newer-task",
+					title: "Page Newer Task",
+					categoryId: "cat-1",
+					createdAt: new Date("2024-01-04T00:00:00.000Z"),
+				},
+			])
+
+			const { items } = await getPaginated({
+				includeArchived: false,
+				skip: 0,
+				take: 20,
+			})
+			const olderIndex = items.findIndex((t) => t.id === "page-older-task")
+			const newerIndex = items.findIndex((t) => t.id === "page-newer-task")
+
+			expect(newerIndex).toBeGreaterThanOrEqual(0)
+			expect(olderIndex).toBeGreaterThanOrEqual(0)
+			expect(newerIndex).toBeLessThan(olderIndex)
 		})
 	})
 
