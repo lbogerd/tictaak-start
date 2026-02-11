@@ -9,10 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ToastTestRouteImport } from './routes/toast-test'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ArchivedRouteImport } from './routes/archived'
 import { Route as IndexRouteImport } from './routes/index'
 
+const ToastTestRoute = ToastTestRouteImport.update({
+  id: '/toast-test',
+  path: '/toast-test',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -33,34 +39,45 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/archived': typeof ArchivedRoute
   '/login': typeof LoginRoute
+  '/toast-test': typeof ToastTestRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/archived': typeof ArchivedRoute
   '/login': typeof LoginRoute
+  '/toast-test': typeof ToastTestRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/archived': typeof ArchivedRoute
   '/login': typeof LoginRoute
+  '/toast-test': typeof ToastTestRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/archived' | '/login'
+  fullPaths: '/' | '/archived' | '/login' | '/toast-test'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/archived' | '/login'
-  id: '__root__' | '/' | '/archived' | '/login'
+  to: '/' | '/archived' | '/login' | '/toast-test'
+  id: '__root__' | '/' | '/archived' | '/login' | '/toast-test'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ArchivedRoute: typeof ArchivedRoute
   LoginRoute: typeof LoginRoute
+  ToastTestRoute: typeof ToastTestRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/toast-test': {
+      id: '/toast-test'
+      path: '/toast-test'
+      fullPath: '/toast-test'
+      preLoaderRoute: typeof ToastTestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -89,6 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ArchivedRoute: ArchivedRoute,
   LoginRoute: LoginRoute,
+  ToastTestRoute: ToastTestRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

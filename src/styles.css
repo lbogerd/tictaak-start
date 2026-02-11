@@ -35,6 +35,26 @@ code {
 	--accent-foreground: oklch(0.21 0.006 285.885);
 	--destructive: oklch(0.577 0.245 27.325);
 	--destructive-foreground: oklch(0.577 0.245 27.325);
+	--status-success-bg: var(--color-emerald-50);
+	--status-success-bg-alt: var(--color-teal-50);
+	--status-success-border: var(--color-emerald-300);
+	--status-success-fg: var(--color-emerald-900);
+	--status-info-bg: var(--color-sky-50);
+	--status-info-bg-alt: var(--color-cyan-50);
+	--status-info-border: var(--color-sky-300);
+	--status-info-fg: var(--color-sky-900);
+	--status-warning-bg: var(--color-amber-50);
+	--status-warning-bg-alt: var(--color-orange-50);
+	--status-warning-border: var(--color-amber-300);
+	--status-warning-fg: var(--color-amber-900);
+	--status-error-bg: var(--color-rose-50);
+	--status-error-bg-alt: var(--color-orange-50);
+	--status-error-border: var(--color-rose-300);
+	--status-error-fg: var(--color-rose-900);
+	--status-loading-bg: var(--color-orange-50);
+	--status-loading-bg-alt: var(--color-yellow-50);
+	--status-loading-border: var(--color-orange-300);
+	--status-loading-fg: var(--color-orange-900);
 	--border: color-mix(in oklch, var(--color-primary-light) 20%, transparent 80%);
 	--input: oklch(0.92 0.004 286.32);
 	--ring: var(--color-purple-500);
@@ -71,6 +91,86 @@ code {
 	--accent-foreground: oklch(0.985 0 0);
 	--destructive: oklch(0.396 0.141 25.723);
 	--destructive-foreground: oklch(0.637 0.237 25.331);
+	--status-success-bg: color-mix(
+		in oklch,
+		var(--color-emerald-900) 45%,
+		transparent 55%
+	);
+	--status-success-bg-alt: color-mix(
+		in oklch,
+		var(--color-teal-900) 35%,
+		transparent 65%
+	);
+	--status-success-border: color-mix(
+		in oklch,
+		var(--color-emerald-400) 55%,
+		transparent 45%
+	);
+	--status-success-fg: var(--color-emerald-100);
+	--status-info-bg: color-mix(
+		in oklch,
+		var(--color-sky-900) 45%,
+		transparent 55%
+	);
+	--status-info-bg-alt: color-mix(
+		in oklch,
+		var(--color-cyan-900) 35%,
+		transparent 65%
+	);
+	--status-info-border: color-mix(
+		in oklch,
+		var(--color-sky-400) 55%,
+		transparent 45%
+	);
+	--status-info-fg: var(--color-sky-100);
+	--status-warning-bg: color-mix(
+		in oklch,
+		var(--color-amber-900) 45%,
+		transparent 55%
+	);
+	--status-warning-bg-alt: color-mix(
+		in oklch,
+		var(--color-orange-900) 35%,
+		transparent 65%
+	);
+	--status-warning-border: color-mix(
+		in oklch,
+		var(--color-amber-400) 55%,
+		transparent 45%
+	);
+	--status-warning-fg: var(--color-amber-100);
+	--status-error-bg: color-mix(
+		in oklch,
+		var(--color-rose-900) 50%,
+		transparent 50%
+	);
+	--status-error-bg-alt: color-mix(
+		in oklch,
+		var(--color-orange-900) 30%,
+		transparent 70%
+	);
+	--status-error-border: color-mix(
+		in oklch,
+		var(--color-rose-400) 55%,
+		transparent 45%
+	);
+	--status-error-fg: var(--color-rose-100);
+	--status-loading-bg: color-mix(
+		in oklch,
+		var(--color-orange-900) 45%,
+		transparent 55%
+	);
+	--status-loading-bg-alt: color-mix(
+		in oklch,
+		var(--color-yellow-900) 35%,
+		transparent 65%
+	);
+	--status-loading-border: color-mix(
+		in oklch,
+		var(--color-orange-400) 55%,
+		transparent 45%
+	);
+	--status-loading-fg: var(--color-orange-100);
 	--border: oklch(0.274 0.006 286.033);
 	--input: oklch(0.274 0.006 286.033);
 	--ring: oklch(0.442 0.017 285.786);
@@ -109,6 +209,26 @@ code {
 	--color-accent-foreground: var(--accent-foreground);
 	--color-destructive: var(--destructive);
 	--color-destructive-foreground: var(--destructive-foreground);
+	--color-status-success-bg: var(--status-success-bg);
+	--color-status-success-bg-alt: var(--status-success-bg-alt);
+	--color-status-success-border: var(--status-success-border);
+	--color-status-success-fg: var(--status-success-fg);
+	--color-status-info-bg: var(--status-info-bg);
+	--color-status-info-bg-alt: var(--status-info-bg-alt);
+	--color-status-info-border: var(--status-info-border);
+	--color-status-info-fg: var(--status-info-fg);
+	--color-status-warning-bg: var(--status-warning-bg);
+	--color-status-warning-bg-alt: var(--status-warning-bg-alt);
+	--color-status-warning-border: var(--status-warning-border);
+	--color-status-warning-fg: var(--status-warning-fg);
+	--color-status-error-bg: var(--status-error-bg);
+	--color-status-error-bg-alt: var(--status-error-bg-alt);
+	--color-status-error-border: var(--status-error-border);
+	--color-status-error-fg: var(--status-error-fg);
+	--color-status-loading-bg: var(--status-loading-bg);
+	--color-status-loading-bg-alt: var(--status-loading-bg-alt);
+	--color-status-loading-border: var(--status-loading-border);
+	--color-status-loading-fg: var(--status-loading-fg);
 	--color-border: var(--border);
 	--color-input: var(--input);
 	--color-ring: var(--ring);

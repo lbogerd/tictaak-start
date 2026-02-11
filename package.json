@@ -16,7 +16,7 @@
 		"preview": "vite preview",
 		"test": "vitest run",
 		"fix": "pnpm exec biome lint --write --unsafe && pnpm exec biome format --write",
-		"comp:add": "pnpm exec shadcn@latest add",
+		"comp:add": "pnpm dlx shadcn@latest add",
 		"db:generate": "pnpm exec drizzle-kit generate",
 		"db:push": "pnpm exec drizzle-kit push",
 		"db:seed": "pnpm exec tsx src/lib/db/seed.ts",
@@ -43,6 +43,7 @@
 		"date-fns": "4.1.0",
 		"drizzle-orm": "0.44.4",
 		"lucide-react": "0.540.0",
+		"next-themes": "0.4.6",
 		"node-thermal-printer": "^4.5.0",
 		"pg": "8.16.3",
 		"pino": "^10.1.1",
@@ -50,6 +51,7 @@
 		"react": "19.1.1",
 		"react-day-picker": "9.9.0",
 		"react-dom": "19.1.1",
+		"sonner": "2.0.7",
 		"tailwind-merge": "3.3.1",
 		"tailwind-variants": "2.1.0",
 		"tailwindcss": "4.1.12",
@@ -71,11 +73,11 @@
 		"drizzle-kit": "0.31.4",
 		"fs-extra": "11.3.1",
 		"husky": "9.1.7",
+		"tsx": "4.20.4",
 		"typescript": "5.9.2",
 		"vite": "7.3.1",
 		"vitest": "4.0.16",
-		"web-vitals": "5.1.0",
-		"tsx": "4.20.4"
+		"web-vitals": "5.1.0"
 	},
 	"packageManager": "pnpm@10.15.0+sha512.486ebc259d3e999a4e8691ce03b5cac4a71cbeca39372a9b762cb500cfdf0873e2cb16abe3d951b1ee2cf012503f027b98b6584e4df22524e0c7450d9ec7aa7b"
 }
