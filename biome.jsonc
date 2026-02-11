@@ -18,6 +18,7 @@
 			"!**/.tanstack",
 			"!**/.nitro",
 			"!**/.output",
+			"!**/dist",
 			// biome cannot handle tailwind css apply stuff, ignore it
 			"!src/styles.css"
 		]
