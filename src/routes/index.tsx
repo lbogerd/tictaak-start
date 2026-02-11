@@ -2,6 +2,7 @@ import { createFileRoute, useRouter } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
 import { eq, isNull } from "drizzle-orm"
 import { Printer, Ticket } from "lucide-react"
+import { toast } from "sonner"
 import { z } from "zod"
 import { CreateTask } from "~/components/tasks/CreateTask"
 import { TaskCard } from "~/components/tasks/TaskCard"
@@ -292,6 +293,13 @@ export const Route = createFileRoute("/")({
 
 type Task = Awaited<ReturnType<typeof getAllTicketsServerFn>>["tasks"][number]
 
+function getErrorMessage(error: unknown, fallbackMessage: string) {
+	if (error instanceof Error) {
+		return error.message
+	}
+	return fallbackMessage
+}
+
 type TaskListSectionProps = {
 	title: string
 	tasks: Task[]
@@ -373,6 +381,16 @@ function App() {
 		},
 	)
 
+	const printTaskWithToast = async (task: Pick<Task, "id" | "title">) => {
+		try {
+			await printTaskServerFn({ data: { id: task.id } })
+			toast.success(`Printed "${task.title}"`)
+		} catch (error) {
+			toast.error(getErrorMessage(error, "Print failed. Please retry."))
+			throw error
+		}
+	}
+
 	return (
 		<div className="mx-auto max-w-4xl px-4 py-8 sm:py-12">
 			<div className="mb-12">
@@ -400,7 +418,7 @@ function App() {
 						// Print immediately if task is due today
 						if (createdTask && createdTask.length > 0) {
 							const task = createdTask[0]
-							await printTaskServerFn({ data: { id: task.id } })
+							await printTaskWithToast(task)
 						}
 						router.invalidate()
 					}}
@@ -447,8 +465,20 @@ function App() {
 								type="button"
 								disabled={dueTasks.length === 0}
 								onClick={async () => {
-									await printDueTasksServerFn()
-									router.invalidate()
+									try {
+										const printedTasks = await printDueTasksServerFn()
+										const count = printedTasks.length
+										toast.success(
+											count === 1
+												? "Printed 1 due task"
+												: `Printed ${count} due tasks`,
+										)
+										router.invalidate()
+									} catch (error) {
+										toast.error(
+											getErrorMessage(error, "Failed to print due tasks."),
+										)
+									}
 								}}
 								gradient
 								size="sm"
@@ -459,7 +489,7 @@ function App() {
 							</Button>
 						}
 						onPrint={async (task) => {
-							await printTaskServerFn({ data: { id: task.id } })
+							await printTaskWithToast(task)
 							router.invalidate()
 						}}
 						onArchive={async (task) => {
@@ -496,7 +526,7 @@ function App() {
 					</div>
 				}
 				onPrint={async (task) => {
-					await printTaskServerFn({ data: { id: task.id } })
+					await printTaskWithToast(task)
 					router.invalidate()
 				}}
 				onArchive={async (task) => {
