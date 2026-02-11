@@ -79,7 +79,7 @@ export function Pagination({
 			</Button>
 
 			<div className="flex items-center gap-1">
-				{pageNumbers.map((page, index) => {
+				{pageNumbers.map((page, _index) => {
 					if (typeof page === "object" && page.type === "ellipsis") {
 						return (
 							<span
@@ -105,9 +105,9 @@ export function Pagination({
 							aria-label={`Go to page ${pageNumber}`}
 							aria-current={isActive ? "page" : undefined}
 							className={cn(
-								"flex h-8 w-8 items-center justify-center rounded-md text-sm font-semibold transition-all",
+								"flex h-8 w-8 items-center justify-center rounded-md font-semibold text-sm transition-all",
 								isActive
-									? "bg-gradient-to-r from-primary to-primary-light text-primary-foreground shadow-sm shadow-primary-light"
+									? "bg-gradient-to-r from-primary to-primary-light text-primary-foreground shadow-primary-light shadow-sm"
 									: "text-neutral-700 hover:bg-orange-100 hover:text-orange-900",
 							)}
 						>

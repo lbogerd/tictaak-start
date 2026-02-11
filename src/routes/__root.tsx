@@ -8,7 +8,7 @@ import {
 	useRouter,
 } from "@tanstack/react-router"
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools"
-import { Archive, Bell, Home } from "lucide-react"
+import { Archive, Home } from "lucide-react"
 import { useState } from "react"
 import { Button } from "~/components/ui/Button"
 import { Toaster } from "~/components/ui/Toast"
