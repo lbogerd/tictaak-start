@@ -126,14 +126,6 @@ function RootDocument({
 										<Archive className="h-4 w-4" />
 										<span className="hidden sm:inline">Archived</span>
 									</Link>
-									<Link
-										to="/toast-test"
-										className="flex items-center gap-2 rounded-lg px-3 py-2 text-neutral-700 text-sm transition-colors hover:bg-orange-100 hover:text-neutral-900 [&.active]:bg-orange-100 [&.active]:font-semibold [&.active]:text-neutral-900"
-										activeProps={{ className: "active" }}
-									>
-										<Bell className="h-4 w-4" />
-										<span className="hidden sm:inline">Toasts</span>
-									</Link>
 								</nav>
 								<div aria-hidden="true" className="h-6 w-px bg-orange-200/80" />
 								<div className="flex items-center gap-2 text-neutral-600 text-xs sm:text-sm">
