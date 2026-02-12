@@ -29,14 +29,18 @@ export function todayStart(ref?: Date) {
 export function getTaskPrintStatus(task: Task, refDate?: Date) {
 	const today = todayStart(refDate)
 	const nextPrint = toStartOfDay(task.nextPrintDate)
+	const recurringDays = task.recursOnDays ?? []
+	const isRecurringToday = recurringDays.includes(today.getDay())
 	const lastPrinted = task.lastPrintedAt
 		? new Date(task.lastPrintedAt)
 		: undefined
+	const hasPrintedToday = Boolean(lastPrinted && !isBefore(lastPrinted, today))
 
 	const isDue = Boolean(
 		nextPrint &&
 			(isBefore(nextPrint, today) || isEqual(nextPrint, today)) &&
-			(!lastPrinted || isBefore(lastPrinted, nextPrint)),
+			((isRecurringToday && !hasPrintedToday) ||
+				(!isRecurringToday && (!lastPrinted || isBefore(lastPrinted, nextPrint)))),
 	)
 
 	const isUpcoming = Boolean(nextPrint && isAfter(nextPrint, today) && !isDue)

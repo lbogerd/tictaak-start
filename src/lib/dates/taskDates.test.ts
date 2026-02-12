@@ -55,6 +55,17 @@ describe("getTaskPrintStatus", () => {
 		expect(s.isPrintedForCurrentCycle).toBe(false)
 	})
 
+	it("is due for recurring task scheduled every day when not printed today", () => {
+		const task = createTask({
+			nextPrintDate: new Date(2025, 0, 1),
+			lastPrintedAt: new Date(2025, 0, 14, 23, 0, 0),
+			recursOnDays: [0, 1, 2, 3, 4, 5, 6],
+		})
+		const s = getTaskPrintStatus(task, REF_NOON)
+		expect(s.isDue).toBe(true)
+		expect(s.isUpcoming).toBe(false)
+	})
+
 	it("is upcoming when nextPrintDate is after today", () => {
 		const tomorrow = new Date(2025, 0, 16)
 		const task = createTask({

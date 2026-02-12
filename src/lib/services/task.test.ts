@@ -216,6 +216,23 @@ describe("taskService", () => {
 			expect(result.length).toBe(0)
 		})
 
+		it("should include every-day recurring task due today when printed before today", async () => {
+			const today = new Date()
+			const yesterday = addDays(today, -1)
+
+			await db.insert(schema.tasks).values({
+				id: "recurring-due-today",
+				title: "Recurring Daily Task",
+				categoryId: "cat-1",
+				nextPrintDate: addDays(today, -7),
+				lastPrintedAt: yesterday,
+				recursOnDays: [0, 1, 2, 3, 4, 5, 6],
+			})
+
+			const result = await getDue(today)
+			expect(result.some((t) => t.id === "recurring-due-today")).toBe(true)
+		})
+
 		it("should show tasks in the past that are yet to be printed", async () => {
 			const yesterday = addDays(new Date(), -1)
 
