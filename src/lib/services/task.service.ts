@@ -1,4 +1,16 @@
-import { and, count, desc, eq, gt, isNull, lt, lte, not } from "drizzle-orm"
+import {
+	and,
+	count,
+	desc,
+	eq,
+	gt,
+	isNull,
+	lt,
+	lte,
+	not,
+	or,
+	sql,
+} from "drizzle-orm"
 import { todayStart } from "~/lib/dates/taskDates"
 import { db } from "~/lib/db/db"
 import { type NewTask, tasks } from "~/lib/db/schema"
@@ -134,11 +146,21 @@ export async function getUpcoming(date?: Date) {
  */
 export async function getDue(date?: Date) {
 	const dueDate = todayStart(date)
+	const dueDay = dueDate.getDay()
 
 	return await db.query.tasks.findMany({
 		where: and(
 			lte(tasks.nextPrintDate, dueDate),
-			lt(tasks.lastPrintedAt, tasks.nextPrintDate),
+			or(
+				and(
+					isNull(tasks.recursOnDays),
+					or(isNull(tasks.lastPrintedAt), lt(tasks.lastPrintedAt, tasks.nextPrintDate)),
+				),
+				and(
+					sql`${tasks.recursOnDays} @> ARRAY[${dueDay}]::integer[]`,
+					or(isNull(tasks.lastPrintedAt), lt(tasks.lastPrintedAt, dueDate)),
+				),
+			),
 			isNull(tasks.archivedAt),
 		),
 		with: {
