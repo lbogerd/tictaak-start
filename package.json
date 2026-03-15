@@ -23,7 +23,8 @@
 		"db:reset": "pnpm run db:push && pnpm run db:seed",
 		"db:studio": "pnpm exec drizzle-kit studio",
 		"auth:create-user": "pnpm exec tsx scripts/create-user.ts",
-		"release": "pnpm build && git push dokku main"
+		"release": "pnpm build && git push dokku main",
+		"db:migrate-task-model": "pnpm exec tsx scripts/migrate-task-model.ts"
 	},
 	"dependencies": {
 		"@fontsource/poppins": "5.2.6",

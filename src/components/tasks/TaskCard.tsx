@@ -41,7 +41,7 @@ export function TaskCard({
 	const { nextPrintDate, isDue, isUpcoming, isPrintedForCurrentCycle } =
 		getTaskPrintStatus(task)
 
-	const recursOn = recursOnLabels(task.recursOnDays ?? [])
+	const recursOn = recursOnLabels(task.recurrenceDays ?? [])
 
 	return (
 		<Card

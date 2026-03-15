@@ -1,6 +1,8 @@
 import { relations } from "drizzle-orm"
 import { integer, pgTable, text, timestamp } from "drizzle-orm/pg-core"
 
+export const recurrenceTypeEnum = ["none", "daily", "weekly"] as const
+
 export const categories = pgTable("Category", {
 	id: text("id")
 		.primaryKey()
@@ -18,9 +20,12 @@ export const tasks = pgTable("Task", {
 	title: text("title").notNull(),
 	categoryId: text("categoryId").notNull(),
 	createdAt: timestamp("createdAt").defaultNow().notNull(),
-	lastPrintedAt: timestamp("lastPrintedAt"),
-	nextPrintDate: timestamp("nextPrintDate"),
-	recursOnDays: integer("recursOnDays").array(),
+	startDate: timestamp("startDate").defaultNow().notNull(),
+	lastHandledAt: timestamp("lastHandledAt"),
+	recurrenceType: text("recurrenceType", { enum: recurrenceTypeEnum })
+		.default("none")
+		.notNull(),
+	recurrenceDays: integer("recurrenceDays").array(),
 	archivedAt: timestamp("archivedAt"),
 })
 

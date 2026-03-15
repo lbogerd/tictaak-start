@@ -12,8 +12,9 @@ CREATE TABLE "Task" (
 	"title" text NOT NULL,
 	"categoryId" text NOT NULL,
 	"createdAt" timestamp DEFAULT now() NOT NULL,
-	"lastPrintedAt" timestamp,
-	"nextPrintDate" timestamp,
-	"recursOnDays" integer[],
+	"startDate" timestamp DEFAULT now() NOT NULL,
+	"lastHandledAt" timestamp,
+	"recurrenceType" text DEFAULT 'none' NOT NULL,
+	"recurrenceDays" integer[],
 	"archivedAt" timestamp
 );
