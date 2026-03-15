@@ -1,7 +1,11 @@
 import { addDays, getDay } from "date-fns"
-import type { NewCategory, NewTask } from "~/lib/db/schema.ts"
+import type { NewCategory, NewTask, NewTaskInstance } from "~/lib/db/schema.ts"
 import { db } from "./db.ts"
-import { categories as categoriesTable, tasks as tasksTable } from "./schema.ts"
+import {
+	categories as categoriesTable,
+	taskInstances as taskInstancesTable,
+	tasks as tasksTable,
+} from "./schema.ts"
 
 export const categories = [
 	{
@@ -57,6 +61,13 @@ export const tasks = [
 	},
 ] satisfies NewTask[]
 
+export const taskInstances = tasks
+	.filter((task) => task.nextPrintDate)
+	.map((task) => ({
+		taskId: task.id,
+		scheduledFor: task.nextPrintDate,
+	})) satisfies NewTaskInstance[]
+
 export async function seedDevData() {
 	for (const category of categories) {
 		await db.insert(categoriesTable).values(category)
@@ -64,6 +75,10 @@ export async function seedDevData() {
 
 	for (const task of tasks) {
 		await db.insert(tasksTable).values(task)
+	}
+
+	for (const taskInstance of taskInstances) {
+		await db.insert(taskInstancesTable).values(taskInstance)
 	}
 }
 

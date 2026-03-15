@@ -1,19 +1,213 @@
 import {
 	and,
+	asc,
 	count,
 	desc,
 	eq,
 	gt,
+	inArray,
 	isNull,
-	lt,
 	lte,
 	not,
-	or,
-	sql,
 } from "drizzle-orm"
-import { todayStart } from "~/lib/dates/taskDates"
+import { addDays } from "date-fns"
+import { toStartOfDay, todayStart } from "~/lib/dates/taskDates"
 import { db } from "~/lib/db/db"
-import { type NewTask, tasks } from "~/lib/db/schema"
+import { type NewTask, taskInstances, tasks } from "~/lib/db/schema"
+
+function normalizeRecurringDays(days: Array<number | null | undefined> | null | undefined) {
+	return Array.from(
+		new Set(
+			(days ?? []).filter(
+				(day): day is number =>
+					typeof day === "number" && Number.isInteger(day) && day >= 0 && day <= 6,
+			),
+		),
+	).sort((left, right) => left - right)
+}
+
+function findNextRecurringDate({
+	startDate,
+	recursOnDays,
+	afterDate,
+}: {
+	startDate: Date | null
+	recursOnDays: Array<number | null | undefined> | null | undefined
+	afterDate: Date
+}) {
+	const anchorDate = toStartOfDay(startDate)
+	const recurringDays = normalizeRecurringDays(recursOnDays)
+
+	if (!anchorDate || recurringDays.length === 0) {
+		return undefined
+	}
+
+	const searchStart = addDays(todayStart(afterDate), 1)
+	const firstCandidate = searchStart > anchorDate ? searchStart : anchorDate
+
+	for (let offset = 0; offset < 14; offset += 1) {
+		const candidate = addDays(firstCandidate, offset)
+		if (recurringDays.includes(candidate.getDay())) {
+			return candidate
+		}
+	}
+
+	return undefined
+}
+
+async function getNextOpenInstances(taskIds: string[]) {
+	if (taskIds.length === 0) {
+		return new Map<string, Date>()
+	}
+
+	const openInstances = await db.query.taskInstances.findMany({
+		where: and(
+			inArray(taskInstances.taskId, taskIds),
+			isNull(taskInstances.handledAt),
+		),
+		orderBy: [asc(taskInstances.taskId), asc(taskInstances.scheduledFor)],
+	})
+
+	const nextByTaskId = new Map<string, Date>()
+	for (const instance of openInstances) {
+		if (!nextByTaskId.has(instance.taskId)) {
+			nextByTaskId.set(instance.taskId, instance.scheduledFor)
+		}
+	}
+
+	return nextByTaskId
+}
+
+async function attachNextInstance<T extends { id: string; nextPrintDate: Date | null }>(
+	taskList: T[],
+) {
+	const nextByTaskId = await getNextOpenInstances(taskList.map((task) => task.id))
+
+	return taskList.map((task) => ({
+		...task,
+		nextPrintDate: nextByTaskId.get(task.id) ?? null,
+	}))
+}
+
+async function markInstanceHandled({
+	taskId,
+	handledAt,
+	printedAt,
+	skippedAt,
+}: {
+	taskId: string
+	handledAt: Date
+	printedAt?: Date
+	skippedAt?: Date
+}) {
+	const openInstance = await db.query.taskInstances.findFirst({
+		where: and(eq(taskInstances.taskId, taskId), isNull(taskInstances.handledAt)),
+		orderBy: [asc(taskInstances.scheduledFor), asc(taskInstances.id)],
+	})
+
+	if (openInstance) {
+		await db
+			.update(taskInstances)
+			.set({ handledAt, printedAt, skippedAt })
+			.where(eq(taskInstances.id, openInstance.id))
+			.returning()
+		return
+	}
+
+	await db.insert(taskInstances).values({
+		taskId,
+		scheduledFor: todayStart(handledAt),
+		handledAt,
+		printedAt,
+		skippedAt,
+	})
+}
+
+async function ensureNextInstance(taskId: string, handledAt: Date) {
+	const existingOpenInstance = await db.query.taskInstances.findFirst({
+		where: and(eq(taskInstances.taskId, taskId), isNull(taskInstances.handledAt)),
+	})
+
+	if (existingOpenInstance) {
+		return
+	}
+
+	const task = await db.query.tasks.findFirst({
+		where: eq(tasks.id, taskId),
+		columns: {
+			id: true,
+			nextPrintDate: true,
+			recursOnDays: true,
+			archivedAt: true,
+		},
+	})
+
+	if (!task || task.archivedAt) {
+		return
+	}
+
+	const nextScheduledFor = findNextRecurringDate({
+		startDate: task.nextPrintDate,
+		recursOnDays: task.recursOnDays,
+		afterDate: handledAt,
+	})
+
+	if (!nextScheduledFor) {
+		return
+	}
+
+	await db.insert(taskInstances).values({
+		taskId,
+		scheduledFor: nextScheduledFor,
+	})
+}
+
+async function syncRecurringInstances(referenceDate = new Date()) {
+	const recurringTasks = await db.query.tasks.findMany({
+		where: and(isNull(tasks.archivedAt), not(isNull(tasks.nextPrintDate))),
+		columns: {
+			id: true,
+			nextPrintDate: true,
+			recursOnDays: true,
+			lastPrintedAt: true,
+		},
+	})
+
+	const recurringWithoutOpenInstance = recurringTasks.filter((task) => {
+		return Boolean(task.nextPrintDate && normalizeRecurringDays(task.recursOnDays).length > 0)
+	})
+
+	const nextByTaskId = await getNextOpenInstances(
+		recurringWithoutOpenInstance.map((task) => task.id),
+	)
+	const referenceFloor = addDays(todayStart(referenceDate), -1)
+
+	for (const task of recurringWithoutOpenInstance) {
+		if (nextByTaskId.has(task.id)) {
+			continue
+		}
+
+		const afterDate =
+			task.lastPrintedAt && task.lastPrintedAt > referenceFloor
+				? task.lastPrintedAt
+				: referenceFloor
+
+		const nextScheduledFor = findNextRecurringDate({
+			startDate: task.nextPrintDate,
+			recursOnDays: task.recursOnDays,
+			afterDate,
+		})
+
+		if (!nextScheduledFor) {
+			continue
+		}
+
+		await db.insert(taskInstances).values({
+			taskId: task.id,
+			scheduledFor: nextScheduledFor,
+		})
+	}
+}
 
 /**
  * Create a new ticket.
@@ -23,7 +217,17 @@ import { type NewTask, tasks } from "~/lib/db/schema"
 export async function create(
 	input: Omit<NewTask, "archivedAt" | "createdAt" | "id" | "lastPrintedAt">,
 ) {
-	return await db.insert(tasks).values(input).returning()
+	const createdTasks = await db.insert(tasks).values(input).returning()
+	const createdTask = createdTasks[0]
+
+	if (createdTask?.nextPrintDate) {
+		await db.insert(taskInstances).values({
+			taskId: createdTask.id,
+			scheduledFor: createdTask.nextPrintDate,
+		})
+	}
+
+	return createdTasks
 }
 
 /**
@@ -33,7 +237,9 @@ export async function create(
  * @returns The ticket.
  */
 export async function getById(id: string, includeArchived = false) {
-	return await db.query.tasks.findFirst({
+	await syncRecurringInstances()
+
+	const task = await db.query.tasks.findFirst({
 		where: and(
 			eq(tasks.id, id),
 			includeArchived ? undefined : isNull(tasks.archivedAt),
@@ -42,6 +248,13 @@ export async function getById(id: string, includeArchived = false) {
 			category: true,
 		},
 	})
+
+	if (!task) {
+		return undefined
+	}
+
+	const [withNextInstance] = await attachNextInstance([task])
+	return withNextInstance
 }
 
 /**
@@ -56,7 +269,9 @@ export async function getAll(
 	skip?: number,
 	take?: number,
 ) {
-	return await db.query.tasks.findMany({
+	await syncRecurringInstances()
+
+	const taskList = await db.query.tasks.findMany({
 		where: includeArchived ? undefined : isNull(tasks.archivedAt),
 		orderBy: [desc(tasks.createdAt), desc(tasks.id)],
 		offset: skip,
@@ -65,6 +280,8 @@ export async function getAll(
 			category: true,
 		},
 	})
+
+	return await attachNextInstance(taskList)
 }
 
 export async function getPaginated({
@@ -78,6 +295,8 @@ export async function getPaginated({
 	skip?: number
 	take?: number
 }) {
+	await syncRecurringInstances()
+
 	const where = archivedOnly
 		? not(isNull(tasks.archivedAt))
 		: includeArchived
@@ -96,7 +315,7 @@ export async function getPaginated({
 	])
 
 	const total = Number(totalResult[0]?.count ?? 0)
-	return { items, total }
+	return { items: await attachNextInstance(items), total }
 }
 
 /**
@@ -109,7 +328,9 @@ export async function getByCategoryId(
 	categoryId: string,
 	includeArchived = false,
 ) {
-	return await db.query.tasks.findMany({
+	await syncRecurringInstances()
+
+	const taskList = await db.query.tasks.findMany({
 		where: and(
 			eq(tasks.categoryId, categoryId),
 			includeArchived ? undefined : isNull(tasks.archivedAt),
@@ -118,6 +339,8 @@ export async function getByCategoryId(
 			category: true,
 		},
 	})
+
+	return await attachNextInstance(taskList)
 }
 
 /**
@@ -126,17 +349,39 @@ export async function getByCategoryId(
  * @returns All upcoming tickets.
  */
 export async function getUpcoming(date?: Date) {
+	await syncRecurringInstances(date)
+
 	const startDate = todayStart(date)
-	return await db.query.tasks.findMany({
+	const upcomingInstances = await db.query.taskInstances.findMany({
 		where: and(
-			gt(tasks.nextPrintDate, startDate),
-			lt(tasks.lastPrintedAt, startDate),
-			isNull(tasks.archivedAt),
+			gt(taskInstances.scheduledFor, startDate),
+			isNull(taskInstances.handledAt),
 		),
+		orderBy: [asc(taskInstances.scheduledFor), asc(taskInstances.id)],
 		with: {
-			category: true,
+			task: {
+				with: {
+					category: true,
+				},
+			},
 		},
 	})
+
+	const seenTaskIds = new Set<string>()
+	return upcomingInstances
+		.filter((instance) => {
+			const task = instance.task
+			if (!task || task.archivedAt || seenTaskIds.has(task.id)) {
+				return false
+			}
+
+			seenTaskIds.add(task.id)
+			return true
+		})
+		.map((instance) => ({
+			...instance.task,
+			nextPrintDate: instance.scheduledFor,
+		}))
 }
 
 /**
@@ -145,28 +390,39 @@ export async function getUpcoming(date?: Date) {
  * @returns All due tickets.
  */
 export async function getDue(date?: Date) {
-	const dueDate = todayStart(date)
-	const dueDay = dueDate.getDay()
+	await syncRecurringInstances(date)
 
-	return await db.query.tasks.findMany({
+	const dueDate = todayStart(date)
+	const dueInstances = await db.query.taskInstances.findMany({
 		where: and(
-			lte(tasks.nextPrintDate, dueDate),
-			or(
-				and(
-					isNull(tasks.recursOnDays),
-					or(isNull(tasks.lastPrintedAt), lt(tasks.lastPrintedAt, tasks.nextPrintDate)),
-				),
-				and(
-					sql`${tasks.recursOnDays} @> ARRAY[${dueDay}]::integer[]`,
-					or(isNull(tasks.lastPrintedAt), lt(tasks.lastPrintedAt, dueDate)),
-				),
-			),
-			isNull(tasks.archivedAt),
+			lte(taskInstances.scheduledFor, dueDate),
+			isNull(taskInstances.handledAt),
 		),
+		orderBy: [asc(taskInstances.scheduledFor), asc(taskInstances.id)],
 		with: {
-			category: true,
+			task: {
+				with: {
+					category: true,
+				},
+			},
 		},
 	})
+
+	const seenTaskIds = new Set<string>()
+	return dueInstances
+		.filter((instance) => {
+			const task = instance.task
+			if (!task || task.archivedAt || seenTaskIds.has(task.id)) {
+				return false
+			}
+
+			seenTaskIds.add(task.id)
+			return true
+		})
+		.map((instance) => ({
+			...instance.task,
+			nextPrintDate: instance.scheduledFor,
+		}))
 }
 
 /**
@@ -189,11 +445,20 @@ export async function archive(id: string) {
  * @returns The updated task.
  */
 export async function markPrinted(id: string, printedAt = new Date()) {
-	return await db
+	await markInstanceHandled({
+		taskId: id,
+		handledAt: printedAt,
+		printedAt,
+	})
+
+	await db
 		.update(tasks)
 		.set({ lastPrintedAt: printedAt })
 		.where(eq(tasks.id, id))
-		.returning()
+
+	await ensureNextInstance(id, printedAt)
+
+	return await db.select().from(tasks).where(eq(tasks.id, id))
 }
 
 /**
@@ -205,11 +470,13 @@ export async function markPrinted(id: string, printedAt = new Date()) {
  * @returns The updated task.
  */
 export async function skipDue(id: string, skippedAt = new Date()) {
-	// We only update lastPrintedAt to mark the current cycle as handled.
-	// nextPrintDate and recursOnDays remain unchanged for future scheduling.
-	return await db
-		.update(tasks)
-		.set({ lastPrintedAt: skippedAt })
-		.where(eq(tasks.id, id))
-		.returning()
+	await markInstanceHandled({
+		taskId: id,
+		handledAt: skippedAt,
+		skippedAt,
+	})
+
+	await ensureNextInstance(id, skippedAt)
+
+	return await db.select().from(tasks).where(eq(tasks.id, id))
 }

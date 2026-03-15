@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm"
-import { integer, pgTable, text, timestamp } from "drizzle-orm/pg-core"
+import { integer, pgTable, text, timestamp, unique } from "drizzle-orm/pg-core"
 
 export const categories = pgTable("Category", {
 	id: text("id")
@@ -18,11 +18,35 @@ export const tasks = pgTable("Task", {
 	title: text("title").notNull(),
 	categoryId: text("categoryId").notNull(),
 	createdAt: timestamp("createdAt").defaultNow().notNull(),
+	// These fields define the task template so the next instance can be planned.
 	lastPrintedAt: timestamp("lastPrintedAt"),
 	nextPrintDate: timestamp("nextPrintDate"),
 	recursOnDays: integer("recursOnDays").array(),
 	archivedAt: timestamp("archivedAt"),
 })
+
+export const taskInstances = pgTable(
+	"TaskInstance",
+	{
+		id: text("id")
+			.primaryKey()
+			.$defaultFn(() => crypto.randomUUID()),
+		taskId: text("taskId")
+			.notNull()
+			.references(() => tasks.id, { onDelete: "cascade" }),
+		scheduledFor: timestamp("scheduledFor").notNull(),
+		createdAt: timestamp("createdAt").defaultNow().notNull(),
+		handledAt: timestamp("handledAt"),
+		printedAt: timestamp("printedAt"),
+		skippedAt: timestamp("skippedAt"),
+	},
+	(table) => [
+		unique("TaskInstance_taskId_scheduledFor_unique").on(
+			table.taskId,
+			table.scheduledFor,
+		),
+	],
+)
 
 export const users = pgTable("User", {
 	id: text("id")
@@ -53,10 +77,18 @@ export const categoriesRelations = relations(categories, ({ many }) => ({
 	tasks: many(tasks),
 }))
 
-export const tasksRelations = relations(tasks, ({ one }) => ({
+export const tasksRelations = relations(tasks, ({ many, one }) => ({
 	category: one(categories, {
 		fields: [tasks.categoryId],
 		references: [categories.id],
+	}),
+	instances: many(taskInstances),
+}))
+
+export const taskInstancesRelations = relations(taskInstances, ({ one }) => ({
+	task: one(tasks, {
+		fields: [taskInstances.taskId],
+		references: [tasks.id],
 	}),
 }))
 
@@ -75,6 +107,8 @@ export type Category = typeof categories.$inferSelect
 export type NewCategory = typeof categories.$inferInsert
 export type Task = typeof tasks.$inferSelect
 export type NewTask = typeof tasks.$inferInsert
+export type TaskInstance = typeof taskInstances.$inferSelect
+export type NewTaskInstance = typeof taskInstances.$inferInsert
 export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
 export type Session = typeof sessions.$inferSelect
