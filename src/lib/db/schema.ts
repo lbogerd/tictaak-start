@@ -18,11 +18,16 @@ export const tasks = pgTable("Task", {
 	title: text("title").notNull(),
 	categoryId: text("categoryId").notNull(),
 	createdAt: timestamp("createdAt").defaultNow().notNull(),
-	// These fields define the task template so the next instance can be planned.
-	lastPrintedAt: timestamp("lastPrintedAt"),
-	nextPrintDate: timestamp("nextPrintDate"),
-	recursOnDays: integer("recursOnDays").array(),
 	archivedAt: timestamp("archivedAt"),
+})
+
+export const taskSchedules = pgTable("TaskSchedule", {
+	taskId: text("taskId")
+		.primaryKey()
+		.references(() => tasks.id, { onDelete: "cascade" }),
+	startsAt: timestamp("startsAt").notNull(),
+	recursOnDays: integer("recursOnDays").array(),
+	createdAt: timestamp("createdAt").defaultNow().notNull(),
 })
 
 export const taskInstances = pgTable(
@@ -83,6 +88,17 @@ export const tasksRelations = relations(tasks, ({ many, one }) => ({
 		references: [categories.id],
 	}),
 	instances: many(taskInstances),
+	schedule: one(taskSchedules, {
+		fields: [tasks.id],
+		references: [taskSchedules.taskId],
+	}),
+}))
+
+export const taskSchedulesRelations = relations(taskSchedules, ({ one }) => ({
+	task: one(tasks, {
+		fields: [taskSchedules.taskId],
+		references: [tasks.id],
+	}),
 }))
 
 export const taskInstancesRelations = relations(taskInstances, ({ one }) => ({
@@ -107,6 +123,8 @@ export type Category = typeof categories.$inferSelect
 export type NewCategory = typeof categories.$inferInsert
 export type Task = typeof tasks.$inferSelect
 export type NewTask = typeof tasks.$inferInsert
+export type TaskSchedule = typeof taskSchedules.$inferSelect
+export type NewTaskSchedule = typeof taskSchedules.$inferInsert
 export type TaskInstance = typeof taskInstances.$inferSelect
 export type NewTaskInstance = typeof taskInstances.$inferInsert
 export type User = typeof users.$inferSelect

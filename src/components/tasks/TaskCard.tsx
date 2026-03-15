@@ -10,38 +10,48 @@ import {
 	Tags,
 } from "lucide-react"
 import { cn } from "~/lib/client/cn"
-import { getTaskPrintStatus, recursOnLabels } from "~/lib/dates/taskDates"
-import type { Category, Task } from "~/lib/db/schema"
+import { getTaskOccurrenceStatus } from "~/lib/dates/taskDates"
+import type { TaskOccurrence } from "~/lib/services/task.service"
 import { Badge } from "../ui/Badge"
 import { Button } from "../ui/Button"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card"
 
-type TaskWithCategory = Task & { category: Category }
-
 type TaskCardProps = {
-	task: TaskWithCategory
+	occurrence: TaskOccurrence
 	className?: string
-	onPrint?: (task: TaskWithCategory) => void
-	onArchive?: (task: TaskWithCategory) => void
-	onUnarchive?: (task: TaskWithCategory) => void
-	onEdit?: (task: TaskWithCategory) => void
-	onSkip?: (task: TaskWithCategory) => void
+	onPrint?: (occurrence: TaskOccurrence) => void
+	onArchive?: (occurrence: TaskOccurrence) => void
+	onUnarchive?: (occurrence: TaskOccurrence) => void
+	onSkip?: (occurrence: TaskOccurrence) => void
 }
 
 export function TaskCard({
-	task,
+	occurrence,
 	className,
 	onPrint,
 	onArchive,
 	onUnarchive,
-	onEdit,
 	onSkip,
 }: TaskCardProps) {
-	const isArchived = Boolean(task.archivedAt)
-	const { nextPrintDate, isDue, isUpcoming, isPrintedForCurrentCycle } =
-		getTaskPrintStatus(task)
-
-	const recursOn = recursOnLabels(task.recursOnDays ?? [])
+	const isArchived = Boolean(occurrence.archivedAt)
+	const status = getTaskOccurrenceStatus(occurrence)
+	const headlineLabel = isArchived
+		? "Archived task"
+		: status.isPrinted
+			? "Printed on"
+			: status.isSkipped
+				? "Skipped on"
+				: status.isDue
+					? "Due"
+					: status.isPlanned
+						? "Scheduled for"
+						: "Occurrence"
+	const headlineValue = occurrence.scheduledFor
+		? format(occurrence.scheduledFor, "EEE, MMM d")
+		: "No scheduled date"
+	const detailDate = occurrence.scheduledFor
+		? format(occurrence.scheduledFor, "EEEE, MMM d, yyyy")
+		: "No open occurrence"
 
 	return (
 		<Card
@@ -59,43 +69,37 @@ export function TaskCard({
 
 			<CardHeader className="gap-3 pb-6">
 				<CardTitle className="flex items-start justify-between gap-3">
-					<span className="font-bold text-base sm:text-lg">{task.title}</span>
+					<div className="space-y-1">
+						<p className="font-medium text-orange-600 text-xs uppercase tracking-[0.2em]">
+							{headlineLabel}
+						</p>
+						<p className="font-black text-2xl text-neutral-950 sm:text-3xl">
+							{headlineValue}
+						</p>
+					</div>
 					<div className="flex items-center gap-2">
-						{onEdit && (
-							<Button
-								type="button"
-								variant="ghost"
-								size="sm"
-								onClick={() => onEdit(task)}
-								title="Edit"
-								className="hidden"
-							>
-								{/* Reserved for future edit action */}
-							</Button>
-						)}
-						{/* Skip button - only show for due tasks that aren't archived */}
-						{onSkip && isDue && !isArchived && (
+						{onSkip && status.isDue && !isArchived && (
 							<Button
 								type="button"
 								variant="outline"
 								size="sm"
-								onClick={() => onSkip(task)}
+								onClick={() => onSkip(occurrence)}
 								title="Skip this occurrence"
 								className="h-9 border-amber-200 text-amber-600 hover:bg-amber-50"
 							>
 								<SkipForward className="mr-2 h-4 w-4" /> Skip
 							</Button>
 						)}
-						{onPrint && !isArchived && (
+						{onPrint && !isArchived && !status.isHandled && (
 							<Button
 								type="button"
 								size="sm"
-								onClick={() => onPrint(task)}
-								title="Print ticket"
+								onClick={() => onPrint(occurrence)}
+								title={status.isDue ? "Print now" : "Print this occurrence now"}
 								gradient
 								className="h-9 px-4"
 							>
-								<Printer className="mr-2 h-4 w-4" /> Print
+								<Printer className="mr-2 h-4 w-4" /> Print now
 							</Button>
 						)}
 						{isArchived
@@ -104,25 +108,14 @@ export function TaskCard({
 										type="button"
 										variant="outline"
 										size="sm"
-										onClick={() => onUnarchive(task)}
+										onClick={() => onUnarchive(occurrence)}
 										title="Unarchive"
 										className="h-9 border-emerald-200 text-emerald-600 hover:bg-emerald-50"
 									>
 										<RotateCcw className="mr-2 h-4 w-4" /> Unarchive
 									</Button>
 								)
-							: onArchive && (
-									<Button
-										type="button"
-										variant="ghost"
-										size="icon"
-										onClick={() => onArchive(task)}
-										title="Archive"
-										className="h-9 w-9 text-rose-400 hover:bg-rose-50 hover:text-rose-600"
-									>
-										<Archive className="h-4 w-4 opacity-70" />
-									</Button>
-								)}
+							: null}
 					</div>
 				</CardTitle>
 
@@ -134,66 +127,99 @@ export function TaskCard({
 							className="bg-neutral-200 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-200"
 						/>
 					)}
-					{nextPrintDate && !isArchived && isDue && (
+					{occurrence.scheduledFor && !isArchived && status.isDue && (
 						<StatusBadge
 							icon={<CalendarClock className="size-4" />}
 							text="Due"
 							emphasize
 						/>
 					)}
-					{nextPrintDate && !isArchived && isUpcoming && (
-						<StatusBadge icon={<Clock4 className="size-4" />} text="Upcoming" />
+					{occurrence.scheduledFor && !isArchived && status.isPlanned && (
+						<StatusBadge icon={<Clock4 className="size-4" />} text="Planned" />
 					)}
-					{isPrintedForCurrentCycle && !isArchived && (
+					{status.isPrinted && !isArchived && (
 						<StatusBadge
 							icon={<CheckCircle2 className="size-4" />}
 							text="Printed"
 						/>
 					)}
+					{status.isSkipped && !isArchived && <StatusBadge text="Skipped" />}
 				</div>
 			</CardHeader>
 
 			<CardContent className="flex flex-col gap-3 pt-6">
-				<div className="flex flex-col gap-4 text-sm sm:flex-row sm:items-center sm:justify-between">
-					{nextPrintDate && (
-						<DetailRow
-							label="Next print"
-							value={
-								<span className="font-medium text-neutral-900">
-									{format(nextPrintDate, "EEE, MMM d, yyyy")}
-								</span>
-							}
-						/>
-					)}
-
+				<DetailRow
+					label="Task"
+					value={
+						<span className="font-semibold text-neutral-950 text-sm sm:text-base">
+							{occurrence.title}
+						</span>
+					}
+				/>
+				<div className="grid gap-3 text-sm sm:grid-cols-2">
+					<DetailRow
+						label="Scheduled for"
+						value={
+							<span className="font-medium text-neutral-900">{detailDate}</span>
+						}
+					/>
 					<DetailRow
 						label="Category"
-						className="justify-end sm:ml-auto"
 						value={
 							<span className="inline-flex items-center gap-1.5">
 								<Tags className="size-3.5 text-orange-400" />
 								<span className="font-medium text-neutral-900">
-									{task.category.name}
+									{occurrence.categoryName}
 								</span>
 							</span>
 						}
 					/>
 				</div>
 
-				{recursOn.length > 0 && (
-					<div className="flex flex-wrap items-center gap-2">
-						<span className="text-muted-foreground text-xs">Repeats:</span>
-						<div className="flex flex-wrap gap-1.5">
-							{recursOn.map((d) => (
-								<Badge
-									key={d}
-									variant="secondary"
-									className="bg-orange-50 px-2 py-0.5 text-orange-700 hover:bg-orange-100"
-								>
-									{d}
-								</Badge>
-							))}
-						</div>
+				{occurrence.recurrenceSummary && (
+					<DetailRow
+						label="Repeats"
+						value={
+							<span className="font-medium text-neutral-900">
+								{occurrence.recurrenceSummary}
+							</span>
+						}
+					/>
+				)}
+
+				{status.isPrinted && occurrence.printedAt && (
+					<DetailRow
+						label="Printed at"
+						value={
+							<span className="font-medium text-neutral-900">
+								{format(occurrence.printedAt, "EEE, MMM d 'at' p")}
+							</span>
+						}
+					/>
+				)}
+
+				{status.isSkipped && occurrence.skippedAt && (
+					<DetailRow
+						label="Skipped at"
+						value={
+							<span className="font-medium text-neutral-900">
+								{format(occurrence.skippedAt, "EEE, MMM d 'at' p")}
+							</span>
+						}
+					/>
+				)}
+
+				{onArchive && !isArchived && (
+					<div className="pt-2">
+						<Button
+							type="button"
+							variant="ghost"
+							size="sm"
+							onClick={() => onArchive(occurrence)}
+							className="h-8 px-2 text-rose-500 hover:bg-rose-50 hover:text-rose-600"
+						>
+							<Archive className="mr-2 h-4 w-4" /> Archive task
+						</Button>
 					</div>
 				)}
 			</CardContent>

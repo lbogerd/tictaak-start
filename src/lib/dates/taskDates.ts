@@ -1,13 +1,19 @@
 import { isAfter, isBefore, isEqual, startOfDay } from "date-fns"
-import type { Task } from "~/lib/db/schema"
+
+type OccurrenceStatusInput = {
+	scheduledFor?: Date | string | number | null
+	handledAt?: Date | string | number | null
+	printedAt?: Date | string | number | null
+	skippedAt?: Date | string | number | null
+}
 
 /**
  * Normalize a date-like value to a start-of-day Date in local time.
  */
 export function toStartOfDay(date: Date | string | number | null | undefined) {
 	if (!date) return undefined
-	const d = date instanceof Date ? date : new Date(date)
-	return startOfDay(d)
+	const value = date instanceof Date ? date : new Date(date)
+	return startOfDay(value)
 }
 
 /**
@@ -18,53 +24,104 @@ export function todayStart(ref?: Date) {
 }
 
 /**
- * Compute task print-cycle status flags in a single place so UI stays
- * in sync with server business rules.
- *
- * Semantics:
- * - Due: nextPrintDate <= today AND (no lastPrintedAt OR lastPrintedAt < nextPrintDate)
- * - Upcoming: nextPrintDate > today
- * - PrintedForCurrentCycle: lastPrintedAt >= nextPrintDate
+ * Compute occurrence status flags in a single place so UI stays in sync with
+ * server business rules.
  */
-export function getTaskPrintStatus(task: Task, refDate?: Date) {
+export function getOccurrenceStatus(
+	input: OccurrenceStatusInput,
+	refDate?: Date,
+) {
 	const today = todayStart(refDate)
-	const nextPrint = toStartOfDay(task.nextPrintDate)
-	const recurringDays = task.recursOnDays ?? []
-	const isRecurringToday = recurringDays.includes(today.getDay())
-	const lastPrinted = task.lastPrintedAt
-		? new Date(task.lastPrintedAt)
-		: undefined
-	const hasPrintedToday = Boolean(lastPrinted && !isBefore(lastPrinted, today))
+	const scheduledFor = toStartOfDay(input.scheduledFor)
+	const handledAt = input.handledAt ? new Date(input.handledAt) : undefined
+	const printedAt = input.printedAt ? new Date(input.printedAt) : undefined
+	const skippedAt = input.skippedAt ? new Date(input.skippedAt) : undefined
+	const isHandled = Boolean(handledAt || skippedAt)
+	const isPrinted = Boolean(printedAt)
+	const isSkipped = Boolean(skippedAt)
 
 	const isDue = Boolean(
-		nextPrint &&
-			(isBefore(nextPrint, today) || isEqual(nextPrint, today)) &&
-			((isRecurringToday && !hasPrintedToday) ||
-				(!isRecurringToday && (!lastPrinted || isBefore(lastPrinted, nextPrint)))),
+		scheduledFor &&
+			(isBefore(scheduledFor, today) || isEqual(scheduledFor, today)) &&
+			!isHandled,
 	)
 
-	const isUpcoming = Boolean(nextPrint && isAfter(nextPrint, today) && !isDue)
-
-	const isPrintedForCurrentCycle = Boolean(
-		nextPrint && lastPrinted && !isBefore(lastPrinted, nextPrint),
+	const isPlanned = Boolean(
+		scheduledFor && isAfter(scheduledFor, today) && !isHandled,
 	)
+
+	const stateLabel = isPrinted
+		? "Printed"
+		: isSkipped
+			? "Skipped"
+			: isDue
+				? "Due"
+				: isPlanned
+					? "Planned"
+					: scheduledFor
+						? "Scheduled"
+						: "Unscheduled"
 
 	return {
 		today,
-		nextPrintDate: nextPrint,
-		lastPrintedAt: lastPrinted,
+		scheduledFor,
+		handledAt,
+		printedAt,
+		skippedAt,
 		isDue,
-		isUpcoming,
-		isPrintedForCurrentCycle,
+		isPlanned,
+		isHandled,
+		isPrinted,
+		isSkipped,
+		stateLabel,
 	}
 }
 
+export function getTaskOccurrenceStatus(
+	occurrence: OccurrenceStatusInput,
+	refDate?: Date,
+) {
+	return getOccurrenceStatus(occurrence, refDate)
+}
+
 /**
- * Format recurrency day indices (0=Sun..6=Sat) into short weekday labels.
+ * Format recurrence day indices (0=Sun..6=Sat) into short weekday labels.
  */
 export function recursOnLabels(days: Array<number | null | undefined> = []) {
 	const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 	return days
-		.filter((d): d is number => typeof d === "number" && !Number.isNaN(d))
-		.map((d) => dayNames[(d + 7) % 7])
+		.filter(
+			(day): day is number => typeof day === "number" && !Number.isNaN(day),
+		)
+		.map((day) => dayNames[(day + 7) % 7])
+}
+
+export function formatRecurrenceSummary(
+	days: Array<number | null | undefined> = [],
+) {
+	const normalizedDays = Array.from(
+		new Set(
+			days.filter((day): day is number => {
+				return typeof day === "number" && Number.isInteger(day)
+			}),
+		),
+	).sort((left, right) => left - right)
+
+	if (normalizedDays.length === 0) {
+		return null
+	}
+
+	if (normalizedDays.length === 7) {
+		return "Every day"
+	}
+
+	if (normalizedDays.join(",") === "1,2,3,4,5") {
+		return "Weekdays"
+	}
+
+	if (normalizedDays.join(",") === "0,6") {
+		return "Weekends"
+	}
+
+	return recursOnLabels(normalizedDays).join(", ")
 }

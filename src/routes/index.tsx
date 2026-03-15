@@ -19,9 +19,11 @@ import {
 	create,
 	getById,
 	getDue,
-	getPaginated,
+	getRecentlyHandled,
+	getUpcoming,
 	markPrinted,
 	skipDue,
+	type TaskOccurrence,
 } from "~/lib/services/task.service"
 
 // Server functions act like API endpoints and run on the server only.
@@ -36,7 +38,7 @@ export const getCategoriesServerFn = createServerFn({
 		})
 	})
 
-export const getAllTicketsServerFn = createServerFn({
+export const getPlannedOccurrencesServerFn = createServerFn({
 	method: "GET",
 	type: "dynamic",
 })
@@ -50,37 +52,44 @@ export const getAllTicketsServerFn = createServerFn({
 			.parse(data ?? {}),
 	)
 	.handler(async ({ data }) => {
+		const plannedOccurrences = await getUpcoming()
 		const requestedPage = data.page
 		const pageSize = data.pageSize
-		const skip = (requestedPage - 1) * pageSize
-		const { items, total } = await getPaginated({
-			includeArchived: false,
-			skip,
-			take: pageSize,
-		})
+		const total = plannedOccurrences.length
 		const totalPages = Math.max(1, Math.ceil(total / pageSize))
 		const safePage = Math.min(Math.max(requestedPage, 1), totalPages)
+		const safeSkip = (safePage - 1) * pageSize
 
-		if (safePage !== requestedPage) {
-			const safeSkip = (safePage - 1) * pageSize
-			const retry = await getPaginated({
-				includeArchived: false,
-				skip: safeSkip,
-				take: pageSize,
-			})
-			return { tasks: retry.items, total: retry.total, page: safePage }
+		return {
+			occurrences: plannedOccurrences.slice(safeSkip, safeSkip + pageSize),
+			total,
+			page: safePage,
 		}
-
-		return { tasks: items, total, page: safePage }
 	})
 
-export const getDueTicketsServerFn = createServerFn({
+export const getDueOccurrencesServerFn = createServerFn({
 	method: "GET",
 	type: "dynamic",
 })
 	.middleware([authMiddleware])
 	.handler(async () => {
 		return await getDue()
+	})
+
+export const getRecentHandledOccurrencesServerFn = createServerFn({
+	method: "GET",
+	type: "dynamic",
+})
+	.middleware([authMiddleware])
+	.validator((data: unknown) =>
+		z
+			.object({
+				limit: z.number().int().min(1).max(20).default(6),
+			})
+			.parse(data ?? {}),
+	)
+	.handler(async ({ data }) => {
+		return await getRecentlyHandled({ take: data.limit })
 	})
 
 export const getTaskSuggestionsServerFn = createServerFn({
@@ -94,8 +103,15 @@ export const getTaskSuggestionsServerFn = createServerFn({
 			columns: {
 				title: true,
 				createdAt: true,
-				lastPrintedAt: true,
 				categoryId: true,
+			},
+			with: {
+				instances: {
+					columns: {
+						handledAt: true,
+						printedAt: true,
+					},
+				},
 			},
 		})
 
@@ -105,9 +121,23 @@ export const getTaskSuggestionsServerFn = createServerFn({
 		>()
 
 		for (const task of tasks) {
+			const lastInstanceActivity = task.instances.reduce<Date | undefined>(
+				(currentLastUsed, instance) => {
+					const candidate =
+						instance.printedAt ?? instance.handledAt ?? undefined
+					if (!candidate) {
+						return currentLastUsed
+					}
+
+					return !currentLastUsed || candidate > currentLastUsed
+						? candidate
+						: currentLastUsed
+				},
+				undefined,
+			)
 			const lastUsed =
-				task.lastPrintedAt && task.lastPrintedAt > task.createdAt
-					? task.lastPrintedAt
+				lastInstanceActivity && lastInstanceActivity > task.createdAt
+					? lastInstanceActivity
 					: task.createdAt
 			const existing = byTitle.get(task.title)
 
@@ -206,16 +236,16 @@ export const printTaskServerFn = createServerFn({
 	.middleware([authMiddleware])
 	.validator((data: unknown) => z.object({ id: z.string() }).parse(data))
 	.handler(async ({ data }) => {
-		const task = await getById(data.id, true)
-		if (!task) {
+		const occurrence = await getById(data.id, true)
+		if (!occurrence) {
 			throw new Error("Task not found.")
 		}
-		if (task.archivedAt) {
+		if (occurrence.archivedAt) {
 			throw new Error("Task is archived.")
 		}
 
-		await printTaskTicket(task)
-		const updated = await markPrinted(task.id)
+		await printTaskTicket(occurrence.task)
+		const updated = await markPrinted(occurrence.taskId)
 		return updated[0]
 	})
 
@@ -225,12 +255,12 @@ export const printDueTasksServerFn = createServerFn({
 })
 	.middleware([authMiddleware])
 	.handler(async () => {
-		const dueTasks = await getDue()
+		const dueOccurrences = await getDue()
 		const updatedTasks = []
 
-		for (const task of dueTasks) {
-			await printTaskTicket(task)
-			const updated = await markPrinted(task.id)
+		for (const occurrence of dueOccurrences) {
+			await printTaskTicket(occurrence.task)
+			const updated = await markPrinted(occurrence.taskId)
 			updatedTasks.push(updated[0])
 		}
 
@@ -239,8 +269,8 @@ export const printDueTasksServerFn = createServerFn({
 
 /**
  * Skip a due task without printing it.
- * Marks the task as handled for the current cycle while preserving
- * future scheduling (nextPrintDate and recursOnDays remain unchanged).
+ * Marks the current task instance as handled while preserving
+ * any recurring schedule for future instances.
  */
 export const skipDueTaskServerFn = createServerFn({
 	method: "POST",
@@ -249,15 +279,15 @@ export const skipDueTaskServerFn = createServerFn({
 	.middleware([authMiddleware])
 	.validator((data: unknown) => z.object({ id: z.string() }).parse(data))
 	.handler(async ({ data }) => {
-		const task = await getById(data.id, false)
-		if (!task) {
+		const occurrence = await getById(data.id, false)
+		if (!occurrence) {
 			throw new Error("Task not found.")
 		}
-		if (task.archivedAt) {
+		if (occurrence.archivedAt) {
 			throw new Error("Task is archived.")
 		}
 
-		const updated = await skipDue(task.id)
+		const updated = await skipDue(occurrence.taskId)
 		return updated[0]
 	})
 
@@ -267,22 +297,25 @@ export const Route = createFileRoute("/")({
 	}),
 	component: App,
 	loader: async ({ location }) => {
-		// Load all data needed for the landing screen in one request.
 		const pageSize = 10
 		const searchParams = new URLSearchParams(location.search ?? "")
 		const requestedPage = Number(searchParams.get("page") ?? "1") || 1
 		const categories = await getCategoriesServerFn()
-		const { tasks, total, page } = await getAllTicketsServerFn({
+		const { occurrences, total, page } = await getPlannedOccurrencesServerFn({
 			data: { page: requestedPage, pageSize },
 		})
-		const dueTasks = await getDueTicketsServerFn()
+		const dueOccurrences = await getDueOccurrencesServerFn()
+		const recentOccurrences = await getRecentHandledOccurrencesServerFn({
+			data: { limit: 6 },
+		})
 		const suggestions = await getTaskSuggestionsServerFn()
 
 		return {
 			categories,
-			tasks,
-			totalTasks: total,
-			dueTasks,
+			plannedOccurrences: occurrences,
+			totalPlannedOccurrences: total,
+			dueOccurrences,
+			recentOccurrences,
 			suggestions,
 			page,
 			pageSize,
@@ -290,8 +323,6 @@ export const Route = createFileRoute("/")({
 		}
 	},
 })
-
-type Task = Awaited<ReturnType<typeof getAllTicketsServerFn>>["tasks"][number]
 
 function getErrorMessage(error: unknown, fallbackMessage: string) {
 	if (error instanceof Error) {
@@ -302,23 +333,21 @@ function getErrorMessage(error: unknown, fallbackMessage: string) {
 
 type TaskListSectionProps = {
 	title: string
-	tasks: Task[]
+	occurrences: TaskOccurrence[]
 	headerAction?: React.ReactNode
 	emptyState?: React.ReactNode
-	onPrint: (task: Task) => Promise<void>
-	onArchive: (task: Task) => Promise<void>
-	onEdit: (task: Task) => void
-	onSkip?: (task: Task) => Promise<void>
+	onPrint?: (occurrence: TaskOccurrence) => Promise<void>
+	onArchive?: (occurrence: TaskOccurrence) => Promise<void>
+	onSkip?: (occurrence: TaskOccurrence) => Promise<void>
 }
 
 function TaskListSection({
 	title,
-	tasks,
+	occurrences,
 	headerAction,
 	emptyState,
 	onPrint,
 	onArchive,
-	onEdit,
 	onSkip,
 }: TaskListSectionProps) {
 	return (
@@ -328,23 +357,30 @@ function TaskListSection({
 				{headerAction}
 			</div>
 
-			{tasks.length > 0 ? (
+			{occurrences.length > 0 ? (
 				<ul className="grid gap-4 pt-4 sm:grid-cols-1">
-					{tasks.map((task) => (
-						<li key={task.id}>
+					{occurrences.map((occurrence) => (
+						<li key={occurrence.instanceId ?? occurrence.taskId}>
 							<TaskCard
-								task={task}
-								onPrint={async (task) => {
-									await onPrint(task)
-								}}
-								onArchive={async (task) => {
-									await onArchive(task)
-								}}
-								onEdit={onEdit}
+								occurrence={occurrence}
+								onPrint={
+									onPrint
+										? async (nextOccurrence) => {
+												await onPrint(nextOccurrence)
+											}
+										: undefined
+								}
+								onArchive={
+									onArchive
+										? async (nextOccurrence) => {
+												await onArchive(nextOccurrence)
+											}
+										: undefined
+								}
 								onSkip={
 									onSkip
-										? async (task) => {
-												await onSkip(task)
+										? async (nextOccurrence) => {
+												await onSkip(nextOccurrence)
 											}
 										: undefined
 								}
@@ -362,9 +398,10 @@ function TaskListSection({
 function App() {
 	const {
 		categories,
-		tasks,
-		totalTasks,
-		dueTasks,
+		plannedOccurrences,
+		totalPlannedOccurrences,
+		dueOccurrences,
+		recentOccurrences,
 		suggestions,
 		page,
 		pageSize,
@@ -372,7 +409,7 @@ function App() {
 	} = Route.useLoaderData()
 	const router = useRouter()
 
-	const totalPages = Math.max(1, Math.ceil(totalTasks / pageSize))
+	const totalPages = Math.max(1, Math.ceil(totalPlannedOccurrences / pageSize))
 	const currentPage = usePageClamp(
 		requestedPage ?? page ?? 1,
 		totalPages,
@@ -381,10 +418,12 @@ function App() {
 		},
 	)
 
-	const printTaskWithToast = async (task: Pick<Task, "id" | "title">) => {
+	const printTaskWithToast = async (
+		occurrence: Pick<TaskOccurrence, "taskId" | "title">,
+	) => {
 		try {
-			await printTaskServerFn({ data: { id: task.id } })
-			toast.success(`Printed "${task.title}"`)
+			await printTaskServerFn({ data: { id: occurrence.taskId } })
+			toast.success(`Printed "${occurrence.title}"`)
 		} catch (error) {
 			toast.error(getErrorMessage(error, "Print failed. Please retry."))
 			throw error
@@ -407,7 +446,7 @@ function App() {
 						await archiveCategoryServerFn({ data: { id } })
 						router.invalidate()
 					}}
-					onCreateTask={async (input) => {
+					onPrintNow={async (input) => {
 						const createdTask = await createTaskServerFn({
 							data: {
 								title: input.text,
@@ -418,11 +457,14 @@ function App() {
 						// Print immediately if task is due today
 						if (createdTask && createdTask.length > 0) {
 							const task = createdTask[0]
-							await printTaskWithToast(task)
+							await printTaskWithToast({
+								taskId: task.id,
+								title: task.title,
+							})
 						}
 						router.invalidate()
 					}}
-					onPlanTask={async (input) => {
+					onPlanOccurrence={async (input) => {
 						// Convert user-friendly schedule choices into numeric weekdays.
 						const recursOnDays =
 							input.schedulingType === "recurring"
@@ -455,28 +497,30 @@ function App() {
 				/>
 			</div>
 
-			{dueTasks.length > 0 && (
-				<div className="mb-12 space-y-6">
-					<TaskListSection
-						title="Due Today"
-						tasks={dueTasks}
-						headerAction={
+			<div className="mb-12 space-y-6">
+				<TaskListSection
+					title="Due Today"
+					occurrences={dueOccurrences}
+					headerAction={
+						dueOccurrences.length > 0 ? (
 							<Button
 								type="button"
-								disabled={dueTasks.length === 0}
 								onClick={async () => {
 									try {
 										const printedTasks = await printDueTasksServerFn()
 										const count = printedTasks.length
 										toast.success(
 											count === 1
-												? "Printed 1 due task"
-												: `Printed ${count} due tasks`,
+												? "Printed 1 due occurrence"
+												: `Printed ${count} due occurrences`,
 										)
 										router.invalidate()
 									} catch (error) {
 										toast.error(
-											getErrorMessage(error, "Failed to print due tasks."),
+											getErrorMessage(
+												error,
+												"Failed to print due occurrences.",
+											),
 										)
 									}
 								}}
@@ -487,30 +531,35 @@ function App() {
 								<Printer className="mr-2 h-4 w-4" />
 								Print all due
 							</Button>
-						}
-						onPrint={async (task) => {
-							await printTaskWithToast(task)
-							router.invalidate()
-						}}
-						onArchive={async (task) => {
-							await archiveTaskServerFn({ data: { id: task.id } })
-							router.invalidate()
-						}}
-						onSkip={async (task) => {
-							await skipDueTaskServerFn({ data: { id: task.id } })
-							router.invalidate()
-						}}
-						onEdit={() => console.log("Editing task")}
-					/>
-				</div>
-			)}
+						) : (
+							<span className="rounded-full bg-orange-100 px-3 py-1 font-medium text-orange-700 text-sm">
+								0 occurrences
+							</span>
+						)
+					}
+					emptyState={
+						<div className="pt-4 text-neutral-500 text-sm">
+							Nothing is due right now.
+						</div>
+					}
+					onPrint={async (occurrence) => {
+						await printTaskWithToast(occurrence)
+						router.invalidate()
+					}}
+					onSkip={async (occurrence) => {
+						await skipDueTaskServerFn({ data: { id: occurrence.taskId } })
+						router.invalidate()
+					}}
+				/>
+			</div>
 
 			<TaskListSection
-				title="Your Tasks"
-				tasks={tasks}
+				title="Planned"
+				occurrences={plannedOccurrences}
 				headerAction={
 					<span className="rounded-full bg-orange-100 px-3 py-1 font-medium text-orange-700 text-sm">
-						{totalTasks} {totalTasks === 1 ? "task" : "tasks"}
+						{totalPlannedOccurrences}{" "}
+						{totalPlannedOccurrences === 1 ? "occurrence" : "occurrences"}
 					</span>
 				}
 				emptyState={
@@ -518,31 +567,48 @@ function App() {
 						<div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-100 text-orange-500">
 							<Ticket className="h-8 w-8" />
 						</div>
-						<h4 className="mb-2 font-semibold text-lg">No tasks yet</h4>
+						<h4 className="mb-2 font-semibold text-lg">
+							No planned occurrences
+						</h4>
 						<p className="max-w-xs text-neutral-500">
-							Create your first task above to start printing your way to
-							productivity.
+							Plan a future date or repeat days above to build your next run.
 						</p>
 					</div>
 				}
-				onPrint={async (task) => {
-					await printTaskWithToast(task)
+				onPrint={async (occurrence) => {
+					await printTaskWithToast(occurrence)
 					router.invalidate()
 				}}
-				onArchive={async (task) => {
-					await archiveTaskServerFn({ data: { id: task.id } })
+				onArchive={async (occurrence) => {
+					await archiveTaskServerFn({ data: { id: occurrence.taskId } })
 					router.invalidate()
 				}}
-				onEdit={() => console.log("Editing task")}
 			/>
 
-			<Pagination
-				currentPage={currentPage}
-				totalPages={totalPages}
-				onChange={async (nextPage) => {
-					await router.navigate({ to: "/", search: { page: nextPage } })
-				}}
-			/>
+			{recentOccurrences.length > 0 ? (
+				<div className="mt-12">
+					<TaskListSection
+						title="Recently Handled"
+						occurrences={recentOccurrences}
+						headerAction={
+							<span className="rounded-full bg-orange-100 px-3 py-1 font-medium text-orange-700 text-sm">
+								{recentOccurrences.length}{" "}
+								{recentOccurrences.length === 1 ? "occurrence" : "occurrences"}
+							</span>
+						}
+					/>
+				</div>
+			) : null}
+
+			{totalPlannedOccurrences > 0 ? (
+				<Pagination
+					currentPage={currentPage}
+					totalPages={totalPages}
+					onChange={async (nextPage) => {
+						await router.navigate({ to: "/", search: { page: nextPage } })
+					}}
+				/>
+			) : null}
 		</div>
 	)
 }

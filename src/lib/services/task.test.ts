@@ -16,6 +16,7 @@ import {
 	getById,
 	getDue,
 	getPaginated,
+	getRecentlyHandled,
 	getUpcoming,
 	markPrinted,
 	skipDue,
@@ -36,20 +37,18 @@ describe("taskService", () => {
 	async function insertScheduledTask({
 		id,
 		title,
-		nextPrintDate,
+		scheduledFor,
 		recursOnDays,
 		archivedAt,
-		lastPrintedAt,
 		handledAt,
 		printedAt,
 		skippedAt,
 	}: {
 		id: string
 		title: string
-		nextPrintDate: Date
+		scheduledFor: Date
 		recursOnDays?: number[]
 		archivedAt?: Date
-		lastPrintedAt?: Date
 		handledAt?: Date
 		printedAt?: Date
 		skippedAt?: Date
@@ -58,25 +57,31 @@ describe("taskService", () => {
 			id,
 			title,
 			categoryId: "cat-1",
-			nextPrintDate,
-			recursOnDays,
 			archivedAt,
-			lastPrintedAt,
 		})
 
 		await db.insert(schema.taskInstances).values({
 			taskId: id,
-			scheduledFor: nextPrintDate,
+			scheduledFor,
 			handledAt,
 			printedAt,
 			skippedAt,
 		})
+
+		if (recursOnDays && recursOnDays.length > 0) {
+			await db.insert(schema.taskSchedules).values({
+				taskId: id,
+				startsAt: scheduledFor,
+				recursOnDays,
+			})
+		}
 	}
 
 	describe("getById", () => {
 		it("should get a task by id", async () => {
 			const result = await getById("task-1")
 			expect(result).toBeDefined()
+			expect(result?.taskId).toBe("task-1")
 		})
 
 		it("should return undefined if task is archived", async () => {
@@ -103,17 +108,17 @@ describe("taskService", () => {
 			expect(result).toBeDefined()
 		})
 
-		it("should surface the next open instance as nextPrintDate", async () => {
+		it("should surface the next open occurrence directly", async () => {
 			const tomorrow = addDays(startOfDay(new Date()), 1)
 
 			await insertScheduledTask({
 				id: "instance-backed-task",
 				title: "Instance Backed Task",
-				nextPrintDate: tomorrow,
+				scheduledFor: tomorrow,
 			})
 
 			const result = await getById("instance-backed-task")
-			expect(result?.nextPrintDate?.getTime()).toBe(tomorrow.getTime())
+			expect(result?.scheduledFor?.getTime()).toBe(tomorrow.getTime())
 		})
 	})
 
@@ -121,7 +126,7 @@ describe("taskService", () => {
 		it("should get all tasks without archived tasks", async () => {
 			const result = await getAll()
 			expect(result.length).toBe(1)
-			expect(result.every((task) => !task.archivedAt)).toBe(true)
+			expect(result.every((occurrence) => !occurrence.archivedAt)).toBe(true)
 		})
 
 		it("should get all tasks with archived tasks", async () => {
@@ -144,7 +149,7 @@ describe("taskService", () => {
 
 			const result = await getAll(false, 1, 2)
 			expect(result.length).toBe(2)
-			expect(result.every((task) => !task.archivedAt)).toBe(true)
+			expect(result.every((occurrence) => !occurrence.archivedAt)).toBe(true)
 		})
 
 		it("should return tasks ordered by newest created first", async () => {
@@ -164,8 +169,12 @@ describe("taskService", () => {
 			])
 
 			const result = await getAll()
-			const olderIndex = result.findIndex((task) => task.id === "older-task")
-			const newerIndex = result.findIndex((task) => task.id === "newer-task")
+			const olderIndex = result.findIndex(
+				(occurrence) => occurrence.taskId === "older-task",
+			)
+			const newerIndex = result.findIndex(
+				(occurrence) => occurrence.taskId === "newer-task",
+			)
 
 			expect(newerIndex).toBeGreaterThanOrEqual(0)
 			expect(olderIndex).toBeGreaterThanOrEqual(0)
@@ -195,8 +204,12 @@ describe("taskService", () => {
 				skip: 0,
 				take: 20,
 			})
-			const olderIndex = items.findIndex((task) => task.id === "page-older-task")
-			const newerIndex = items.findIndex((task) => task.id === "page-newer-task")
+			const olderIndex = items.findIndex(
+				(occurrence) => occurrence.taskId === "page-older-task",
+			)
+			const newerIndex = items.findIndex(
+				(occurrence) => occurrence.taskId === "page-newer-task",
+			)
 
 			expect(newerIndex).toBeGreaterThanOrEqual(0)
 			expect(olderIndex).toBeGreaterThanOrEqual(0)
@@ -208,7 +221,7 @@ describe("taskService", () => {
 		it("should get tasks by category id without archived tasks", async () => {
 			const result = await getByCategoryId("cat-1")
 			expect(result.length).toBe(1)
-			expect(result.every((task) => !task.archivedAt)).toBe(true)
+			expect(result.every((occurrence) => !occurrence.archivedAt)).toBe(true)
 		})
 
 		it("should get tasks by category id with archived tasks", async () => {
@@ -231,11 +244,13 @@ describe("taskService", () => {
 			await insertScheduledTask({
 				id: "future-task",
 				title: "Future Task",
-				nextPrintDate: tomorrow,
+				scheduledFor: tomorrow,
 			})
 
 			const result = await getUpcoming()
-			expect(result.some((task) => task.id === "future-task")).toBe(true)
+			expect(
+				result.some((occurrence) => occurrence.taskId === "future-task"),
+			).toBe(true)
 		})
 
 		it("should exclude handled instances from upcoming tasks", async () => {
@@ -244,13 +259,17 @@ describe("taskService", () => {
 			await insertScheduledTask({
 				id: "handled-upcoming-task",
 				title: "Handled Upcoming Task",
-				nextPrintDate: tomorrow,
+				scheduledFor: tomorrow,
 				handledAt: new Date(),
 				printedAt: new Date(),
 			})
 
 			const result = await getUpcoming()
-			expect(result.some((task) => task.id === "handled-upcoming-task")).toBe(false)
+			expect(
+				result.some(
+					(occurrence) => occurrence.taskId === "handled-upcoming-task",
+				),
+			).toBe(false)
 		})
 	})
 
@@ -262,29 +281,67 @@ describe("taskService", () => {
 			await insertScheduledTask({
 				id: "due-task",
 				title: "Due Task",
-				nextPrintDate: yesterday,
+				scheduledFor: yesterday,
 			})
 
 			await insertScheduledTask({
 				id: "printed-task",
 				title: "Printed Task",
-				nextPrintDate: yesterday,
+				scheduledFor: yesterday,
 				handledAt: now,
 				printedAt: now,
-				lastPrintedAt: now,
 			})
 
 			await insertScheduledTask({
 				id: "archived-due-task",
 				title: "Archived Due Task",
-				nextPrintDate: yesterday,
+				scheduledFor: yesterday,
 				archivedAt: now,
 			})
 
 			const result = await getDue()
-			expect(result.some((task) => task.id === "due-task")).toBe(true)
-			expect(result.some((task) => task.id === "printed-task")).toBe(false)
-			expect(result.some((task) => task.id === "archived-due-task")).toBe(false)
+			expect(
+				result.some((occurrence) => occurrence.taskId === "due-task"),
+			).toBe(true)
+			expect(
+				result.some((occurrence) => occurrence.taskId === "printed-task"),
+			).toBe(false)
+			expect(
+				result.some((occurrence) => occurrence.taskId === "archived-due-task"),
+			).toBe(false)
+		})
+	})
+
+	describe("getRecentlyHandled", () => {
+		it("should return handled occurrences ordered by most recent first", async () => {
+			const yesterday = addDays(startOfDay(new Date()), -1)
+			const earlierHandledAt = new Date("2025-01-01T08:00:00.000Z")
+			const laterHandledAt = new Date("2025-01-01T10:00:00.000Z")
+
+			await insertScheduledTask({
+				id: "handled-earlier",
+				title: "Handled Earlier",
+				scheduledFor: yesterday,
+				handledAt: earlierHandledAt,
+				printedAt: earlierHandledAt,
+			})
+
+			await insertScheduledTask({
+				id: "handled-later",
+				title: "Handled Later",
+				scheduledFor: yesterday,
+				handledAt: laterHandledAt,
+				skippedAt: laterHandledAt,
+				recursOnDays: [1, 3, 5],
+			})
+
+			const result = await getRecentlyHandled({ take: 2 })
+
+			expect(result).toHaveLength(2)
+			expect(result[0]?.taskId).toBe("handled-later")
+			expect(result[0]?.skippedAt?.getTime()).toBe(laterHandledAt.getTime())
+			expect(result[0]?.recurrenceSummary).toBe("Mon, Wed, Fri")
+			expect(result[1]?.taskId).toBe("handled-earlier")
 		})
 	})
 
@@ -325,14 +382,11 @@ describe("taskService", () => {
 			await insertScheduledTask({
 				id: "recurring-print-task",
 				title: "Recurring Print Task",
-				nextPrintDate: yesterday,
+				scheduledFor: yesterday,
 				recursOnDays: [0, 1, 2, 3, 4, 5, 6],
 			})
 
 			await markPrinted("recurring-print-task", printedAt)
-
-			const task = await getById("recurring-print-task")
-			expect(task?.lastPrintedAt?.getTime()).toBe(printedAt.getTime())
 
 			const instances = await db.query.taskInstances.findMany({
 				where: eq(schema.taskInstances.taskId, "recurring-print-task"),
@@ -356,16 +410,20 @@ describe("taskService", () => {
 			await insertScheduledTask({
 				id: "skip-due-task",
 				title: "Skip Due Task",
-				nextPrintDate: yesterday,
+				scheduledFor: yesterday,
 			})
 
 			const dueBefore = await getDue()
-			expect(dueBefore.some((task) => task.id === "skip-due-task")).toBe(true)
+			expect(
+				dueBefore.some((occurrence) => occurrence.taskId === "skip-due-task"),
+			).toBe(true)
 
 			await skipDue("skip-due-task")
 
 			const dueAfter = await getDue()
-			expect(dueAfter.some((task) => task.id === "skip-due-task")).toBe(false)
+			expect(
+				dueAfter.some((occurrence) => occurrence.taskId === "skip-due-task"),
+			).toBe(false)
 
 			const instances = await db.query.taskInstances.findMany({
 				where: eq(schema.taskInstances.taskId, "skip-due-task"),
@@ -384,15 +442,15 @@ describe("taskService", () => {
 			await insertScheduledTask({
 				id: "recurring-skip-task",
 				title: "Recurring Skip Task",
-				nextPrintDate: yesterday,
+				scheduledFor: yesterday,
 				recursOnDays: recurringDays,
 			})
 
 			await skipDue("recurring-skip-task")
 
 			const task = await getById("recurring-skip-task")
-			expect(task?.recursOnDays).toEqual(recurringDays)
-			expect(task?.nextPrintDate?.getTime()).toBe(
+			expect(task?.schedule?.recursOnDays).toEqual(recurringDays)
+			expect(task?.scheduledFor?.getTime()).toBe(
 				addDays(startOfDay(new Date()), 1).getTime(),
 			)
 

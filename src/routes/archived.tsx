@@ -6,7 +6,7 @@ import { TaskCard } from "~/components/tasks/TaskCard"
 import { Pagination } from "~/components/ui/Pagination"
 import { usePageClamp } from "~/hooks/usePageClamp"
 import { authMiddleware } from "~/lib/auth/serverFns"
-import type { Category, Task } from "~/lib/db/schema"
+import type { TaskOccurrence } from "~/lib/services/task.service"
 import { getPaginated } from "~/lib/services/task.service"
 
 export const getArchivedTicketsServerFn = createServerFn({
@@ -41,10 +41,10 @@ export const getArchivedTicketsServerFn = createServerFn({
 				skip: safeSkip,
 				take: pageSize,
 			})
-			return { tasks: retry.items, total: retry.total, page: safePage }
+			return { definitions: retry.items, total: retry.total, page: safePage }
 		}
 
-		return { tasks: items, total, page: safePage }
+		return { definitions: items, total, page: safePage }
 	})
 
 export const Route = createFileRoute("/archived")({
@@ -56,19 +56,25 @@ export const Route = createFileRoute("/archived")({
 		const pageSize = 10
 		const searchParams = new URLSearchParams(location.search ?? "")
 		const requestedPage = Number(searchParams.get("page") ?? "1") || 1
-		const { tasks, total, page } = await getArchivedTicketsServerFn({
+		const { definitions, total, page } = await getArchivedTicketsServerFn({
 			data: { page: requestedPage, pageSize },
 		})
-		return { tasks, totalTasks: total, page, pageSize, requestedPage }
+		return {
+			definitions,
+			totalDefinitions: total,
+			page,
+			pageSize,
+			requestedPage,
+		}
 	},
 })
 
 function ArchivedPage() {
-	const { tasks, totalTasks, page, pageSize, requestedPage } =
+	const { definitions, totalDefinitions, page, pageSize, requestedPage } =
 		Route.useLoaderData()
 	const router = useRouter()
 
-	const totalPages = Math.max(1, Math.ceil(totalTasks / pageSize))
+	const totalPages = Math.max(1, Math.ceil(totalDefinitions / pageSize))
 	const currentPage = usePageClamp(
 		requestedPage ?? page ?? 1,
 		totalPages,
@@ -81,17 +87,23 @@ function ArchivedPage() {
 		<div className="mx-auto max-w-4xl px-4 py-8 sm:py-12">
 			<div className="space-y-6">
 				<div className="flex items-center justify-between border-orange-200/50 border-b pb-4">
-					<h3 className="font-semibold text-xl">Archived</h3>
+					<h3 className="font-semibold text-xl">Archived Task Definitions</h3>
 					<span className="rounded-full bg-orange-100 px-3 py-1 font-medium text-orange-700 text-sm">
-						{totalTasks} {totalTasks === 1 ? "task" : "tasks"}
+						{totalDefinitions}{" "}
+						{totalDefinitions === 1 ? "definition" : "definitions"}
 					</span>
 				</div>
 
-				{totalTasks > 0 ? (
+				<p className="text-neutral-500 text-sm">
+					Historical handled occurrences stay on the home screen. This view is
+					for archived task definitions only.
+				</p>
+
+				{totalDefinitions > 0 ? (
 					<ul className="grid gap-4 sm:grid-cols-1">
-						{tasks.map((task: Task & { category: Category }) => (
-							<li key={task.id}>
-								<TaskCard task={task} />
+						{definitions.map((definition: TaskOccurrence) => (
+							<li key={definition.instanceId ?? definition.taskId}>
+								<TaskCard occurrence={definition} />
 							</li>
 						))}
 					</ul>
@@ -100,14 +112,16 @@ function ArchivedPage() {
 						<div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-100 text-orange-500">
 							<Archive className="h-8 w-8" />
 						</div>
-						<h4 className="mb-2 font-semibold text-lg">No archived tasks</h4>
+						<h4 className="mb-2 font-semibold text-lg">
+							No archived definitions
+						</h4>
 						<p className="max-w-xs text-neutral-500">
-							Your archived tasks will appear here.
+							Archived task definitions will appear here when you retire them.
 						</p>
 					</div>
 				)}
 
-				{totalTasks > 0 ? (
+				{totalDefinitions > 0 ? (
 					<Pagination
 						currentPage={currentPage}
 						totalPages={totalPages}

@@ -28,8 +28,8 @@ import { Separator } from "../ui/Separator"
 export function CreateTask({
 	categories,
 	suggestions,
-	onCreateTask,
-	onPlanTask,
+	onPrintNow,
+	onPlanOccurrence,
 	onCreateCategory,
 	onArchiveCategory,
 }: {
@@ -40,8 +40,8 @@ export function CreateTask({
 		lastUsed: string
 		categoryId: string
 	}[]
-	onCreateTask?: (task: { text: string; categoryId: string }) => void
-	onPlanTask?: (task: {
+	onPrintNow?: (task: { text: string; categoryId: string }) => void
+	onPlanOccurrence?: (task: {
 		text: string
 		categoryId: string
 		schedulingType: "once" | "recurring"
@@ -82,8 +82,7 @@ export function CreateTask({
 		if (!taskText.trim()) return
 
 		if (showScheduling && scheduledDate) {
-			// Plan task for later
-			onPlanTask?.({
+			onPlanOccurrence?.({
 				text: taskText,
 				categoryId: selectedCategory,
 				schedulingType,
@@ -94,8 +93,7 @@ export function CreateTask({
 					schedulingType === "recurring" ? selectedWeekdays : [],
 			})
 		} else {
-			// Create task now
-			onCreateTask?.({
+			onPrintNow?.({
 				text: taskText,
 				categoryId: selectedCategory,
 			})
@@ -189,7 +187,7 @@ export function CreateTask({
 								<PopoverTrigger asChild>
 									<Input
 										type="text"
-										placeholder="What needs to be done?"
+										placeholder="What should this occurrence be for?"
 										className="h-12 w-full border border-orange-200/60 bg-white px-4 shadow-sm ring-offset-transparent focus-visible:border-orange-300 focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-orange-200"
 										value={taskText}
 										onChange={(e) => {
@@ -292,12 +290,12 @@ export function CreateTask({
 								{showScheduling ? (
 									<>
 										<CalendarOff className="mr-2 h-4 w-4" />
-										<span>Scheduled</span>
+										<span>Planning</span>
 									</>
 								) : (
 									<>
 										<CalendarClock className="mr-2 h-4 w-4" />
-										<span>Schedule</span>
+										<span>Plan for later</span>
 									</>
 								)}
 							</Button>
@@ -308,7 +306,9 @@ export function CreateTask({
 								gradient
 								disabled={!taskText.trim() || !selectedCategory}
 							>
-								{showScheduling && scheduledDate ? "Plan Task" : "Create Task"}
+								{showScheduling && scheduledDate
+									? "Plan occurrence"
+									: "Print now"}
 							</Button>
 						</div>
 					</div>
@@ -319,7 +319,7 @@ export function CreateTask({
 							<div className="flex flex-col gap-4 sm:flex-row sm:items-center">
 								<div className="flex items-center gap-2 text-orange-700 text-sm sm:mr-2">
 									<CalendarSync className="h-4 w-4" />
-									<span className="font-medium">Schedule Settings</span>
+									<span className="font-medium">Plan occurrence</span>
 								</div>
 
 								<Select
@@ -338,13 +338,13 @@ export function CreateTask({
 										<SelectItem value="once">
 											<div className="flex items-center gap-2">
 												<Calendar1 className="h-4 w-4" />
-												<span>One-time</span>
+												<span>One date</span>
 											</div>
 										</SelectItem>
 										<SelectItem value="recurring">
 											<div className="flex items-center gap-2">
 												<CalendarSync className="h-4 w-4" />
-												<span>Recurring</span>
+												<span>Repeat</span>
 											</div>
 										</SelectItem>
 									</SelectContent>
