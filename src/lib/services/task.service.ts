@@ -1,37 +1,22 @@
-import {
-	and,
-	count,
-	desc,
-	eq,
-	gt,
-	isNull,
-	lt,
-	lte,
-	not,
-	or,
-	sql,
-} from "drizzle-orm"
+import { and, count, desc, eq, isNull, lte, not, or, sql } from "drizzle-orm"
 import { todayStart } from "~/lib/dates/taskDates"
 import { db } from "~/lib/db/db"
 import { type NewTask, tasks } from "~/lib/db/schema"
 
-/**
- * Create a new ticket.
- * @param input - The input data for the ticket.
- * @returns The created ticket.
- */
 export async function create(
-	input: Omit<NewTask, "archivedAt" | "createdAt" | "id" | "lastPrintedAt">,
+	input: Omit<
+		NewTask,
+		"archivedAt" | "createdAt" | "id" | "lastHandledAt" | "recurrenceType"
+	> & {
+		recurrenceType?: "none" | "daily" | "weekly"
+	},
 ) {
-	return await db.insert(tasks).values(input).returning()
+	return await db
+		.insert(tasks)
+		.values({ ...input, recurrenceType: input.recurrenceType ?? "none" })
+		.returning()
 }
 
-/**
- * Get a ticket by ID
- * @param id - The ID of the ticket
- * @param includeArchived - Whether to include archived tickets
- * @returns The ticket.
- */
 export async function getById(id: string, includeArchived = false) {
 	return await db.query.tasks.findFirst({
 		where: and(
@@ -44,13 +29,6 @@ export async function getById(id: string, includeArchived = false) {
 	})
 }
 
-/**
- * Get all tickets
- * @param includeArchived - Whether to include archived tickets
- * @param skip - Number of records to skip (for pagination)
- * @param take - Number of records to take (for pagination)
- * @returns All tickets.
- */
 export async function getAll(
 	includeArchived = false,
 	skip?: number,
@@ -99,12 +77,6 @@ export async function getPaginated({
 	return { items, total }
 }
 
-/**
- * Get all tickets by category
- * @param categoryId - The ID of the category
- * @param includeArchived - Whether to include archived tickets
- * @returns All tickets by category.
- */
 export async function getByCategoryId(
 	categoryId: string,
 	includeArchived = false,
@@ -120,17 +92,11 @@ export async function getByCategoryId(
 	})
 }
 
-/**
- * Get all upcoming tickets. Will always exclude archived tickets.
- * @param date - The date to get upcoming tickets for. Defaults to today.
- * @returns All upcoming tickets.
- */
 export async function getUpcoming(date?: Date) {
 	const startDate = todayStart(date)
 	return await db.query.tasks.findMany({
 		where: and(
-			gt(tasks.nextPrintDate, startDate),
-			lt(tasks.lastPrintedAt, startDate),
+			sql`${tasks.startDate} > ${startDate}`,
 			isNull(tasks.archivedAt),
 		),
 		with: {
@@ -139,26 +105,25 @@ export async function getUpcoming(date?: Date) {
 	})
 }
 
-/**
- * Get all due tickets. Will always exclude archived tickets. Includes tickets that were due earlier but not printed yet.
- * @param date - The date to get due tickets for. Defaults to today.
- * @returns All due tickets.
- */
 export async function getDue(date?: Date) {
 	const dueDate = todayStart(date)
 	const dueDay = dueDate.getDay()
 
+	const notHandledToday = or(
+		isNull(tasks.lastHandledAt),
+		sql`${tasks.lastHandledAt} < ${dueDate}`,
+	)
+
 	return await db.query.tasks.findMany({
 		where: and(
-			lte(tasks.nextPrintDate, dueDate),
+			lte(tasks.startDate, dueDate),
 			or(
+				and(eq(tasks.recurrenceType, "none"), isNull(tasks.lastHandledAt)),
+				and(eq(tasks.recurrenceType, "daily"), notHandledToday),
 				and(
-					isNull(tasks.recursOnDays),
-					or(isNull(tasks.lastPrintedAt), lt(tasks.lastPrintedAt, tasks.nextPrintDate)),
-				),
-				and(
-					sql`${tasks.recursOnDays} @> ARRAY[${dueDay}]::integer[]`,
-					or(isNull(tasks.lastPrintedAt), lt(tasks.lastPrintedAt, dueDate)),
+					eq(tasks.recurrenceType, "weekly"),
+					sql`${tasks.recurrenceDays} @> ARRAY[${dueDay}]::integer[]`,
+					notHandledToday,
 				),
 			),
 			isNull(tasks.archivedAt),
@@ -169,11 +134,6 @@ export async function getDue(date?: Date) {
 	})
 }
 
-/**
- * Archive a task by ID
- * @param id - The ID of the task to archive
- * @returns The archived task.
- */
 export async function archive(id: string) {
 	return await db
 		.update(tasks)
@@ -182,34 +142,18 @@ export async function archive(id: string) {
 		.returning()
 }
 
-/**
- * Mark a task as printed.
- * @param id - The ID of the task to update
- * @param printedAt - When the task was printed
- * @returns The updated task.
- */
-export async function markPrinted(id: string, printedAt = new Date()) {
+export async function markPrinted(id: string, handledAt = new Date()) {
 	return await db
 		.update(tasks)
-		.set({ lastPrintedAt: printedAt })
+		.set({ lastHandledAt: handledAt })
 		.where(eq(tasks.id, id))
 		.returning()
 }
 
-/**
- * Skip a due task by marking it as printed without actually printing.
- * This removes the task from the due list while preserving nextPrintDate
- * and recursOnDays so future instances are unaffected.
- * @param id - The ID of the task to skip
- * @param skippedAt - When the task was skipped (defaults to now)
- * @returns The updated task.
- */
 export async function skipDue(id: string, skippedAt = new Date()) {
-	// We only update lastPrintedAt to mark the current cycle as handled.
-	// nextPrintDate and recursOnDays remain unchanged for future scheduling.
 	return await db
 		.update(tasks)
-		.set({ lastPrintedAt: skippedAt })
+		.set({ lastHandledAt: skippedAt })
 		.where(eq(tasks.id, id))
 		.returning()
 }

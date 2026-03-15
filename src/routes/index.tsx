@@ -94,7 +94,7 @@ export const getTaskSuggestionsServerFn = createServerFn({
 			columns: {
 				title: true,
 				createdAt: true,
-				lastPrintedAt: true,
+				lastHandledAt: true,
 				categoryId: true,
 			},
 		})
@@ -106,8 +106,8 @@ export const getTaskSuggestionsServerFn = createServerFn({
 
 		for (const task of tasks) {
 			const lastUsed =
-				task.lastPrintedAt && task.lastPrintedAt > task.createdAt
-					? task.lastPrintedAt
+				task.lastHandledAt && task.lastHandledAt > task.createdAt
+					? task.lastHandledAt
 					: task.createdAt
 			const existing = byTitle.get(task.title)
 
@@ -155,8 +155,9 @@ export const createTaskServerFn = createServerFn({
 			.object({
 				title: z.string(),
 				categoryId: z.string(),
-				nextPrintDate: z.date().optional(),
-				recursOnDays: z.array(z.number()).optional(),
+				startDate: z.date().optional(),
+				recurrenceType: z.enum(["none", "daily", "weekly"]).optional(),
+				recurrenceDays: z.array(z.number()).optional(),
 			})
 			.parse(data),
 	)
@@ -240,7 +241,7 @@ export const printDueTasksServerFn = createServerFn({
 /**
  * Skip a due task without printing it.
  * Marks the task as handled for the current cycle while preserving
- * future scheduling (nextPrintDate and recursOnDays remain unchanged).
+ * future scheduling (startDate/recurrence fields remain unchanged).
  */
 export const skipDueTaskServerFn = createServerFn({
 	method: "POST",
@@ -412,7 +413,8 @@ function App() {
 							data: {
 								title: input.text,
 								categoryId: input.categoryId,
-								nextPrintDate: toStartOfDay(new Date()),
+								startDate: toStartOfDay(new Date()),
+								recurrenceType: "none",
 							},
 						})
 						// Print immediately if task is due today
@@ -423,31 +425,37 @@ function App() {
 						router.invalidate()
 					}}
 					onPlanTask={async (input) => {
-						// Convert user-friendly schedule choices into numeric weekdays.
-						const recursOnDays =
-							input.schedulingType === "recurring"
-								? input.recurringType === "every-day"
-									? [0, 1, 2, 3, 4, 5, 6]
-									: input.selectedWeekdays?.map((day) => {
-											const mapping: Record<string, number> = {
-												sun: 0,
-												mon: 1,
-												tue: 2,
-												wed: 3,
-												thu: 4,
-												fri: 5,
-												sat: 6,
-											}
-											return mapping[day]
-										})
+						const recurrenceDays =
+							input.schedulingType === "recurring" &&
+							input.recurringType === "weekdays"
+								? input.selectedWeekdays?.map((day) => {
+										const mapping: Record<string, number> = {
+											sun: 0,
+											mon: 1,
+											tue: 2,
+											wed: 3,
+											thu: 4,
+											fri: 5,
+											sat: 6,
+										}
+										return mapping[day]
+									})
 								: undefined
+
+						const recurrenceType =
+							input.schedulingType !== "recurring"
+								? "none"
+								: input.recurringType === "every-day"
+									? "daily"
+									: "weekly"
 
 						await createTaskServerFn({
 							data: {
 								title: input.text,
 								categoryId: input.categoryId,
-								nextPrintDate: toStartOfDay(input.scheduledDate),
-								recursOnDays,
+								startDate: toStartOfDay(input.scheduledDate),
+								recurrenceType,
+								recurrenceDays,
 							},
 						})
 						router.invalidate()
