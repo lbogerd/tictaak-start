@@ -5,7 +5,7 @@ import { z } from "zod"
 import { TaskCard } from "~/components/tasks/TaskCard"
 import { Pagination } from "~/components/ui/Pagination"
 import { usePageClamp } from "~/hooks/usePageClamp"
-import { authMiddleware } from "~/lib/auth/serverFns"
+import { authMiddleware } from "~/lib/auth/serverFns.server"
 import type { TaskOccurrence } from "~/lib/services/task.service"
 import { getPaginated } from "~/lib/services/task.service"
 

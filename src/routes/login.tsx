@@ -7,7 +7,7 @@ import {
 	getCsrfTokenServerFn,
 	getSessionServerFn,
 	loginServerFn,
-} from "~/lib/auth/serverFns"
+} from "~/lib/auth/serverFns.server"
 
 /**
  * Validate redirect URL to prevent open redirect attacks.

@@ -13,7 +13,7 @@ import { useState } from "react"
 import { Button } from "~/components/ui/Button"
 import { Toaster } from "~/components/ui/Toast"
 import Version from "~/components/Version"
-import { getSessionServerFn, logoutServerFn } from "~/lib/auth/serverFns"
+import { getSessionServerFn, logoutServerFn } from "~/lib/auth/serverFns.server"
 import appCss from "../styles.css?url"
 
 export const Route = createRootRoute({
