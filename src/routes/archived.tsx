@@ -5,16 +5,15 @@ import { z } from "zod"
 import { TaskCard } from "~/components/tasks/TaskCard"
 import { Pagination } from "~/components/ui/Pagination"
 import { usePageClamp } from "~/hooks/usePageClamp"
-import { authMiddleware } from "~/lib/auth/serverFns.server"
+import { authMiddleware } from "~/lib/auth/serverFns"
 import type { TaskOccurrence } from "~/lib/services/task.service"
 import { getPaginated } from "~/lib/services/task.service"
 
 export const getArchivedTicketsServerFn = createServerFn({
 	method: "GET",
-	type: "dynamic",
 })
 	.middleware([authMiddleware])
-	.validator((data: unknown) =>
+	.inputValidator((data: unknown) =>
 		z
 			.object({
 				page: z.number().int().min(1).default(1),

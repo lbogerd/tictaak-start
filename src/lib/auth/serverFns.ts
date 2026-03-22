@@ -1,5 +1,5 @@
 import { createMiddleware, createServerFn } from "@tanstack/react-start"
-import { getWebRequest } from "@tanstack/react-start/server"
+import { getRequest } from "@tanstack/react-start/server"
 import { z } from "zod"
 import {
 	clearSession,
@@ -33,7 +33,7 @@ const loginSchema = z.object({
  */
 function getClientIp(): string | undefined {
 	try {
-		const request = getWebRequest()
+		const request = getRequest()
 		// Check common proxy headers
 		const forwarded = request.headers.get("x-forwarded-for")
 		if (forwarded) {
@@ -52,7 +52,7 @@ function getClientIp(): string | undefined {
 
 // CSRF middleware for state-changing operations
 export const csrfMiddleware = createMiddleware({ type: "function" })
-	.validator(z.object({ csrfToken: z.string().min(1) }))
+	.inputValidator(z.object({ csrfToken: z.string().min(1) }))
 	.server(async ({ next, data }) => {
 		const csrfToken = data.csrfToken
 		if (!validateCsrfToken(csrfToken)) {
@@ -82,7 +82,6 @@ export const authMiddleware = createMiddleware({ type: "function" }).server(
 
 export const getSessionServerFn = createServerFn({
 	method: "GET",
-	type: "dynamic",
 }).handler(async () => {
 	return await getSessionUser()
 })
@@ -90,16 +89,14 @@ export const getSessionServerFn = createServerFn({
 // Server function to get the CSRF token (call on page load)
 export const getCsrfTokenServerFn = createServerFn({
 	method: "GET",
-	type: "dynamic",
 }).handler(async () => {
 	return { csrfToken: ensureCsrfToken() }
 })
 
 export const loginServerFn = createServerFn({
 	method: "POST",
-	type: "dynamic",
 })
-	.validator((data: unknown) => loginSchema.parse(data))
+	.inputValidator((data: unknown) => loginSchema.parse(data))
 	.handler(async ({ data }) => {
 		// Validate CSRF token
 		if (!validateCsrfToken(data.csrfToken)) {
@@ -136,10 +133,9 @@ export const loginServerFn = createServerFn({
 
 export const logoutServerFn = createServerFn({
 	method: "POST",
-	type: "dynamic",
 })
 	.middleware([authMiddleware])
-	.validator((data: unknown) =>
+	.inputValidator((data: unknown) =>
 		z.object({ csrfToken: z.string().min(1) }).parse(data),
 	)
 	.handler(async ({ data }) => {

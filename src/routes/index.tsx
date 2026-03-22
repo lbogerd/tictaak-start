@@ -9,7 +9,7 @@ import { TaskCard } from "~/components/tasks/TaskCard"
 import { Button } from "~/components/ui/Button"
 import { Pagination } from "~/components/ui/Pagination"
 import { usePageClamp } from "~/hooks/usePageClamp"
-import { authMiddleware } from "~/lib/auth/serverFns.server"
+import { authMiddleware } from "~/lib/auth/serverFns"
 import { toStartOfDay } from "~/lib/dates/taskDates"
 import { db } from "~/lib/db/db"
 import { categories } from "~/lib/db/schema"
@@ -29,7 +29,6 @@ import {
 // Server functions act like API endpoints and run on the server only.
 export const getCategoriesServerFn = createServerFn({
 	method: "GET",
-	type: "dynamic",
 })
 	.middleware([authMiddleware])
 	.handler(async () => {
@@ -40,10 +39,9 @@ export const getCategoriesServerFn = createServerFn({
 
 export const getPlannedOccurrencesServerFn = createServerFn({
 	method: "GET",
-	type: "dynamic",
 })
 	.middleware([authMiddleware])
-	.validator((data: unknown) =>
+	.inputValidator((data: unknown) =>
 		z
 			.object({
 				page: z.number().int().min(1).default(1),
@@ -69,7 +67,6 @@ export const getPlannedOccurrencesServerFn = createServerFn({
 
 export const getDueOccurrencesServerFn = createServerFn({
 	method: "GET",
-	type: "dynamic",
 })
 	.middleware([authMiddleware])
 	.handler(async () => {
@@ -78,10 +75,9 @@ export const getDueOccurrencesServerFn = createServerFn({
 
 export const getRecentHandledOccurrencesServerFn = createServerFn({
 	method: "GET",
-	type: "dynamic",
 })
 	.middleware([authMiddleware])
-	.validator((data: unknown) =>
+	.inputValidator((data: unknown) =>
 		z
 			.object({
 				limit: z.number().int().min(1).max(20).default(6),
@@ -94,7 +90,6 @@ export const getRecentHandledOccurrencesServerFn = createServerFn({
 
 export const getTaskSuggestionsServerFn = createServerFn({
 	method: "GET",
-	type: "dynamic",
 })
 	.middleware([authMiddleware])
 	.handler(async () => {
@@ -177,10 +172,9 @@ export const getTaskSuggestionsServerFn = createServerFn({
 
 export const createTaskServerFn = createServerFn({
 	method: "POST",
-	type: "dynamic",
 })
 	.middleware([authMiddleware])
-	.validator((data: unknown) =>
+	.inputValidator((data: unknown) =>
 		z
 			.object({
 				title: z.string(),
@@ -196,10 +190,9 @@ export const createTaskServerFn = createServerFn({
 
 export const createCategoryServerFn = createServerFn({
 	method: "POST",
-	type: "dynamic",
 })
 	.middleware([authMiddleware])
-	.validator((data: unknown) => z.object({ name: z.string() }).parse(data))
+	.inputValidator((data: unknown) => z.object({ name: z.string() }).parse(data))
 	.handler(async ({ data }) => {
 		const result = await db.insert(categories).values(data).returning()
 		return result[0]
@@ -207,20 +200,18 @@ export const createCategoryServerFn = createServerFn({
 
 export const archiveTaskServerFn = createServerFn({
 	method: "POST",
-	type: "dynamic",
 })
 	.middleware([authMiddleware])
-	.validator((data: unknown) => z.object({ id: z.string() }).parse(data))
+	.inputValidator((data: unknown) => z.object({ id: z.string() }).parse(data))
 	.handler(async ({ data }) => {
 		return await archive(data.id)
 	})
 
 export const archiveCategoryServerFn = createServerFn({
 	method: "POST",
-	type: "dynamic",
 })
 	.middleware([authMiddleware])
-	.validator((data: unknown) => z.object({ id: z.string() }).parse(data))
+	.inputValidator((data: unknown) => z.object({ id: z.string() }).parse(data))
 	.handler(async ({ data }) => {
 		return await db
 			.update(categories)
@@ -231,10 +222,9 @@ export const archiveCategoryServerFn = createServerFn({
 
 export const printTaskServerFn = createServerFn({
 	method: "POST",
-	type: "dynamic",
 })
 	.middleware([authMiddleware])
-	.validator((data: unknown) => z.object({ id: z.string() }).parse(data))
+	.inputValidator((data: unknown) => z.object({ id: z.string() }).parse(data))
 	.handler(async ({ data }) => {
 		const occurrence = await getById(data.id, true)
 		if (!occurrence) {
@@ -251,7 +241,6 @@ export const printTaskServerFn = createServerFn({
 
 export const printDueTasksServerFn = createServerFn({
 	method: "POST",
-	type: "dynamic",
 })
 	.middleware([authMiddleware])
 	.handler(async () => {
@@ -274,10 +263,9 @@ export const printDueTasksServerFn = createServerFn({
  */
 export const skipDueTaskServerFn = createServerFn({
 	method: "POST",
-	type: "dynamic",
 })
 	.middleware([authMiddleware])
-	.validator((data: unknown) => z.object({ id: z.string() }).parse(data))
+	.inputValidator((data: unknown) => z.object({ id: z.string() }).parse(data))
 	.handler(async ({ data }) => {
 		const occurrence = await getById(data.id, false)
 		if (!occurrence) {
