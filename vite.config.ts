@@ -8,6 +8,11 @@ const config = defineConfig({
 	server: {
 		port: 3000,
 	},
+	preview: {
+		// Dokku injects PORT for the web process, so preview must not hardcode 3000.
+		host: true,
+		port: Number(process.env.PORT ?? 3000),
+	},
 	plugins: [
 		// path aliases
 		viteTsConfigPaths({

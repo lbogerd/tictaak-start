@@ -79,6 +79,15 @@ To build this application for production:
 pnpm build
 ```
 
+To run the production server locally or on Dokku:
+
+```bash
+pnpm start
+```
+
+The production server uses `PORT` when it is set by the platform, and falls
+back to `3000` locally.
+
 ## Testing
 
 This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:

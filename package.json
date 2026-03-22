@@ -11,7 +11,7 @@
 		"dev:local-db": "DB_PROVIDER=pglite pnpm db:seed && pnpm dev",
 		"db:up": "bash scripts/db-up.sh",
 		"db:down": "bash scripts/db-down.sh",
-		"start": "vite preview --port 3000",
+		"start": "vite preview",
 		"build": "vite build",
 		"preview": "vite preview",
 		"test": "vitest run",
