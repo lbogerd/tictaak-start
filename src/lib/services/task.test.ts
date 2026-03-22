@@ -6,7 +6,7 @@ import {
 	migratePgliteDb,
 	seedTestData,
 	type TestDb,
-} from "../db/adapters"
+} from "../db/adapters.pglite"
 import { setDb } from "../db/db"
 import * as schema from "../db/schema"
 import {
