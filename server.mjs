@@ -1,5 +1,5 @@
-import { createServer } from "node:http"
 import { createReadStream, promises as fs } from "node:fs"
+import { createServer } from "node:http"
 import path from "node:path"
 import { Readable } from "node:stream"
 import { fileURLToPath, pathToFileURL } from "node:url"
@@ -57,7 +57,8 @@ const server = createServer(async (req, res) => {
 				req.method === "GET" || req.method === "HEAD"
 					? undefined
 					: Readable.toWeb(req),
-			duplex: req.method === "GET" || req.method === "HEAD" ? undefined : "half",
+			duplex:
+				req.method === "GET" || req.method === "HEAD" ? undefined : "half",
 		})
 
 		const response = await serverEntry.fetch(request)
@@ -99,7 +100,9 @@ async function resolveStaticFile(pathname) {
 
 function isWithinDirectory(root, target) {
 	const relativePath = path.relative(root, target)
-	return relativePath && !relativePath.startsWith("..") && !path.isAbsolute(relativePath)
+	return relativePath &&
+		!relativePath.startsWith("..") &&
+		!path.isAbsolute(relativePath)
 		? true
 		: target === root
 }
