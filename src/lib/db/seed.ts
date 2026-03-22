@@ -1,3 +1,4 @@
+import "dotenv/config"
 import { addDays, getDay } from "date-fns"
 import type {
 	NewCategory,

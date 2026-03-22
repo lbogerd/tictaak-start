@@ -1,3 +1,4 @@
+import "dotenv/config"
 import { db } from "../src/lib/db/db.ts"
 import { users } from "../src/lib/db/schema.ts"
 import { authLogger } from "../src/lib/logger/logger.ts"

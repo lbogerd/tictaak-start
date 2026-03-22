@@ -1,3 +1,4 @@
+import "dotenv/config"
 import { eq } from "drizzle-orm"
 import { db } from "../src/lib/db/db.ts"
 import { users } from "../src/lib/db/schema.ts"

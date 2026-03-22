@@ -1,5 +1,4 @@
 import { createEnv } from "@t3-oss/env-core"
-import "dotenv/config" // needed to make the seed script work
 import { z } from "zod"
 
 export const env = createEnv({

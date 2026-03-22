@@ -1,3 +1,4 @@
+import "dotenv/config"
 import { eq } from "drizzle-orm"
 import { verifyPassword } from "../src/lib/auth/password.ts"
 import { db } from "../src/lib/db/db.ts"

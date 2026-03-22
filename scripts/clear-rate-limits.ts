@@ -1,3 +1,4 @@
+import "dotenv/config"
 import { authLogger } from "../src/lib/logger/logger.ts"
 
 // This is a quick hack to clear rate limits - we need to import from a running server
