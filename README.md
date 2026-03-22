@@ -85,6 +85,11 @@ To run the production server locally or on Dokku:
 pnpm start
 ```
 
+The current TanStack Start build output in this project is split into
+`dist/client` and `dist/server`. `pnpm start` runs a small Node adapter that
+serves static assets from `dist/client` and forwards application requests to the
+generated TanStack Start fetch handler in `dist/server/server.js`.
+
 The production server uses `PORT` when it is set by the platform, and falls
 back to `3000` locally.
 
