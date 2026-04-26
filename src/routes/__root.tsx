@@ -8,7 +8,7 @@ import {
 	useRouter,
 } from "@tanstack/react-router"
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools"
-import { Archive, Home } from "lucide-react"
+import { Archive, CalendarDays, Home } from "lucide-react"
 import { useState } from "react"
 import { Button } from "~/components/ui/Button"
 import { Toaster } from "~/components/ui/Toast"
@@ -117,6 +117,14 @@ function RootDocument({
 									>
 										<Home className="h-4 w-4" />
 										<span className="hidden sm:inline">Tasks</span>
+									</Link>
+									<Link
+										to="/calendar"
+										className="flex items-center gap-2 rounded-lg px-3 py-2 text-neutral-700 text-sm transition-colors hover:bg-orange-100 hover:text-neutral-900 [&.active]:bg-orange-100 [&.active]:font-semibold [&.active]:text-neutral-900"
+										activeProps={{ className: "active" }}
+									>
+										<CalendarDays className="h-4 w-4" />
+										<span className="hidden sm:inline">Calendar</span>
 									</Link>
 									<Link
 										to="/archived"

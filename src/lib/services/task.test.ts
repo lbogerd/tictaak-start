@@ -1,4 +1,4 @@
-import { addDays, startOfDay } from "date-fns"
+import { addDays, format, startOfDay } from "date-fns"
 import { eq } from "drizzle-orm"
 import { beforeEach, describe, expect, it } from "vitest"
 import {
@@ -17,6 +17,7 @@ import {
 	getDue,
 	getPaginated,
 	getRecentlyHandled,
+	getSevenDayAgenda,
 	getUpcoming,
 	markPrinted,
 	skipDue,
@@ -271,6 +272,71 @@ describe("taskService", () => {
 				),
 			).toBe(false)
 		})
+
+		it("should include virtual recurring occurrences across the upcoming window", async () => {
+			const referenceDate = new Date(2026, 3, 27, 12, 0, 0)
+			const monday = startOfDay(referenceDate)
+
+			await insertScheduledTask({
+				id: "daily-upcoming-task",
+				title: "Daily Upcoming Task",
+				scheduledFor: monday,
+				recursOnDays: [0, 1, 2, 3, 4, 5, 6],
+			})
+
+			const result = await getUpcoming(referenceDate)
+			const upcomingOccurrences = result.filter(
+				(occurrence) => occurrence.taskId === "daily-upcoming-task",
+			)
+
+			expect(upcomingOccurrences).toHaveLength(6)
+			expect(
+				upcomingOccurrences.map((occurrence) =>
+					format(occurrence.scheduledFor ?? new Date(0), "yyyy-MM-dd"),
+				),
+			).toEqual([
+				"2026-04-28",
+				"2026-04-29",
+				"2026-04-30",
+				"2026-05-01",
+				"2026-05-02",
+				"2026-05-03",
+			])
+			expect(upcomingOccurrences.every((occurrence) => !occurrence.instanceId)).toBe(
+				true,
+			)
+		})
+
+		it("should not duplicate virtual upcoming dates that already have real instances", async () => {
+			const referenceDate = new Date(2026, 3, 27, 12, 0, 0)
+			const monday = startOfDay(referenceDate)
+			const wednesday = addDays(monday, 2)
+
+			await insertScheduledTask({
+				id: "mixed-upcoming-task",
+				title: "Mixed Upcoming Task",
+				scheduledFor: monday,
+				recursOnDays: [1, 3],
+			})
+
+			await db.insert(schema.taskInstances).values({
+				taskId: "mixed-upcoming-task",
+				scheduledFor: wednesday,
+			})
+
+			const result = await getUpcoming(referenceDate)
+			const upcomingOccurrences = result.filter(
+				(occurrence) => occurrence.taskId === "mixed-upcoming-task",
+			)
+
+			expect(upcomingOccurrences).toHaveLength(1)
+			expect(
+				upcomingOccurrences.map((occurrence) =>
+					format(occurrence.scheduledFor ?? new Date(0), "yyyy-MM-dd"),
+				),
+			).toEqual(["2026-04-29"])
+			expect(upcomingOccurrences[0]?.instanceId).toBeTruthy()
+		})
 	})
 
 	describe("getDue", () => {
@@ -342,6 +408,114 @@ describe("taskService", () => {
 			expect(result[0]?.skippedAt?.getTime()).toBe(laterHandledAt.getTime())
 			expect(result[0]?.recurrenceSummary).toBe("Mon, Wed, Fri")
 			expect(result[1]?.taskId).toBe("handled-earlier")
+		})
+	})
+
+	describe("getSevenDayAgenda", () => {
+		it("should include virtual recurring occurrences across the full agenda window", async () => {
+			const referenceDate = new Date(2026, 3, 27, 12, 0, 0)
+			const monday = startOfDay(referenceDate)
+
+			await insertScheduledTask({
+				id: "daily-agenda-task",
+				title: "Daily Agenda Task",
+				scheduledFor: monday,
+				recursOnDays: [0, 1, 2, 3, 4, 5, 6],
+			})
+
+			const result = await getSevenDayAgenda(referenceDate)
+			const agendaOccurrences = result.filter(
+				(occurrence) => occurrence.taskId === "daily-agenda-task",
+			)
+
+			expect(agendaOccurrences).toHaveLength(7)
+			expect(
+				agendaOccurrences.map((occurrence) =>
+					format(occurrence.scheduledFor ?? new Date(0), "yyyy-MM-dd"),
+				),
+			).toEqual([
+				"2026-04-27",
+				"2026-04-28",
+				"2026-04-29",
+				"2026-04-30",
+				"2026-05-01",
+				"2026-05-02",
+				"2026-05-03",
+			])
+			expect(agendaOccurrences[0]?.instanceId).toBeTruthy()
+			expect(
+				agendaOccurrences.slice(1).every((occurrence) => !occurrence.instanceId),
+			).toBe(true)
+		})
+
+		it("should not duplicate dates that already have real task instances", async () => {
+			const monday = new Date("2026-04-27T00:00:00.000Z")
+			const wednesday = addDays(monday, 2)
+
+			await insertScheduledTask({
+				id: "mixed-agenda-task",
+				title: "Mixed Agenda Task",
+				scheduledFor: monday,
+				recursOnDays: [1, 3],
+			})
+
+			await db.insert(schema.taskInstances).values({
+				taskId: "mixed-agenda-task",
+				scheduledFor: wednesday,
+			})
+
+			const result = await getSevenDayAgenda(monday)
+			const agendaOccurrences = result.filter(
+				(occurrence) => occurrence.taskId === "mixed-agenda-task",
+			)
+
+			expect(agendaOccurrences).toHaveLength(2)
+			expect(
+				agendaOccurrences.map((occurrence) =>
+					occurrence.scheduledFor?.toISOString(),
+				),
+			).toEqual([
+				"2026-04-27T00:00:00.000Z",
+				"2026-04-29T00:00:00.000Z",
+			])
+			expect(agendaOccurrences.every((occurrence) => occurrence.instanceId)).toBe(
+				true,
+			)
+		})
+
+		it("should exclude archived recurring tasks and avoid persisting virtual occurrences", async () => {
+			const monday = new Date("2026-04-27T00:00:00.000Z")
+
+			await insertScheduledTask({
+				id: "archived-agenda-task",
+				title: "Archived Agenda Task",
+				scheduledFor: monday,
+				recursOnDays: [0, 1, 2, 3, 4, 5, 6],
+				archivedAt: monday,
+			})
+
+			await insertScheduledTask({
+				id: "virtual-only-agenda-task",
+				title: "Virtual Only Agenda Task",
+				scheduledFor: monday,
+				recursOnDays: [0, 1, 2, 3, 4, 5, 6],
+			})
+
+			const result = await getSevenDayAgenda(monday)
+
+			expect(
+				result.some((occurrence) => occurrence.taskId === "archived-agenda-task"),
+			).toBe(false)
+			expect(
+				result.filter(
+					(occurrence) => occurrence.taskId === "virtual-only-agenda-task",
+				),
+			).toHaveLength(7)
+
+			const persistedInstances = await db.query.taskInstances.findMany({
+				where: eq(schema.taskInstances.taskId, "virtual-only-agenda-task"),
+			})
+			expect(persistedInstances).toHaveLength(1)
 		})
 	})
 

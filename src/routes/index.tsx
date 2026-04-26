@@ -329,6 +329,13 @@ type TaskListSectionProps = {
 	onSkip?: (occurrence: TaskOccurrence) => Promise<void>
 }
 
+function getOccurrenceKey(occurrence: TaskOccurrence) {
+	return (
+		occurrence.instanceId ??
+		`${occurrence.taskId}:${occurrence.scheduledFor?.toISOString() ?? "unscheduled"}`
+	)
+}
+
 function TaskListSection({
 	title,
 	occurrences,
@@ -348,7 +355,7 @@ function TaskListSection({
 			{occurrences.length > 0 ? (
 				<ul className="grid gap-4 pt-4 sm:grid-cols-1">
 					{occurrences.map((occurrence) => (
-						<li key={occurrence.instanceId ?? occurrence.taskId}>
+						<li key={getOccurrenceKey(occurrence)}>
 							<TaskCard
 								occurrence={occurrence}
 								onPrint={

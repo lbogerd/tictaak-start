@@ -6,10 +6,12 @@ import {
 	desc,
 	eq,
 	gt,
+	gte,
 	inArray,
 	isNull,
 	lte,
 	not,
+	or,
 } from "drizzle-orm"
 import {
 	formatRecurrenceSummary,
@@ -46,6 +48,129 @@ export type TaskOccurrence = {
 	task: TaskWithCategory
 	instance: TaskInstance | null
 	schedule: TaskSchedule | null
+}
+
+function occurrenceDateKey(taskId: string, scheduledFor: Date | null) {
+	const scheduledAtStartOfDay = toStartOfDay(scheduledFor)
+	if (!scheduledAtStartOfDay) {
+		return undefined
+	}
+
+	return `${taskId}:${scheduledAtStartOfDay.toISOString()}`
+}
+
+function buildVirtualOccurrence(
+	task: TaskWithCategory,
+	schedule: TaskSchedule,
+	scheduledFor: Date,
+): TaskOccurrence {
+	const base = toTaskOccurrence(task, null, schedule)
+
+	return {
+		...base,
+		scheduledFor,
+	}
+}
+
+function withVirtualRecurringOccurrences({
+	occurrences,
+	windowStart,
+	windowEnd,
+	seedRecurringTasks = [],
+}: {
+	occurrences: TaskOccurrence[]
+	windowStart: Date
+	windowEnd: Date
+	seedRecurringTasks?: Array<{ task: TaskWithCategory; schedule: TaskSchedule }>
+}) {
+	const existingDateKeys = new Set<string>()
+	for (const occurrence of occurrences) {
+		const key = occurrenceDateKey(occurrence.taskId, occurrence.scheduledFor)
+		if (key) {
+			existingDateKeys.add(key)
+		}
+	}
+
+	const recurringByTaskId = new Map<
+		string,
+		{ task: TaskWithCategory; schedule: TaskSchedule }
+	>()
+	for (const occurrence of occurrences) {
+		if (!occurrence.task || !occurrence.schedule || occurrence.archivedAt) {
+			continue
+		}
+
+		const recurringDays = normalizeRecurringDays(occurrence.schedule.recursOnDays)
+		if (recurringDays.length === 0) {
+			continue
+		}
+
+		if (!recurringByTaskId.has(occurrence.taskId)) {
+			recurringByTaskId.set(occurrence.taskId, {
+				task: occurrence.task,
+				schedule: occurrence.schedule,
+			})
+		}
+	}
+
+	for (const recurringTask of seedRecurringTasks) {
+		const recurringDays = normalizeRecurringDays(
+			recurringTask.schedule.recursOnDays,
+		)
+		if (recurringDays.length === 0) {
+			continue
+		}
+
+		if (!recurringByTaskId.has(recurringTask.task.id)) {
+			recurringByTaskId.set(recurringTask.task.id, recurringTask)
+		}
+	}
+
+	const virtualOccurrences: TaskOccurrence[] = []
+	for (const { task, schedule } of recurringByTaskId.values()) {
+		const scheduleStartsAt = toStartOfDay(schedule.startsAt)
+		const recurringDays = normalizeRecurringDays(schedule.recursOnDays)
+
+		if (!scheduleStartsAt || recurringDays.length === 0) {
+			continue
+		}
+
+		for (
+			let candidate = windowStart;
+			candidate <= windowEnd;
+			candidate = addDays(candidate, 1)
+		) {
+			if (candidate < scheduleStartsAt) {
+				continue
+			}
+
+			if (!recurringDays.includes(candidate.getDay())) {
+				continue
+			}
+
+			const dateKey = occurrenceDateKey(task.id, candidate)
+			if (!dateKey || existingDateKeys.has(dateKey)) {
+				continue
+			}
+
+			existingDateKeys.add(dateKey)
+			virtualOccurrences.push(buildVirtualOccurrence(task, schedule, candidate))
+		}
+	}
+
+	return [...occurrences, ...virtualOccurrences].sort((left, right) => {
+		const leftTime = left.scheduledFor?.getTime() ?? Number.MAX_SAFE_INTEGER
+		const rightTime = right.scheduledFor?.getTime() ?? Number.MAX_SAFE_INTEGER
+		if (leftTime !== rightTime) {
+			return leftTime - rightTime
+		}
+
+		if (left.taskId !== right.taskId) {
+			return left.taskId.localeCompare(right.taskId)
+		}
+
+		return (left.instanceId ?? "").localeCompare(right.instanceId ?? "")
+	})
 }
 
 export type CreateTaskInput = {
@@ -488,6 +613,14 @@ export async function getUpcoming(date?: Date) {
 	await syncRecurringInstances(date)
 
 	const startDate = todayStart(date)
+	const endDate = addDays(startDate, 6)
+	const recurringTasks = await db.query.tasks.findMany({
+		where: isNull(tasks.archivedAt),
+		with: {
+			category: true,
+			schedule: true,
+		},
+	})
 	const upcomingInstances = await db.query.taskInstances.findMany({
 		where: and(
 			gt(taskInstances.scheduledFor, startDate),
@@ -504,20 +637,31 @@ export async function getUpcoming(date?: Date) {
 		},
 	})
 
-	const seenTaskIds = new Set<string>()
-	return upcomingInstances
+	const upcomingOccurrences = upcomingInstances
 		.filter((instance) => {
 			const task = instance.task
-			if (!task || task.archivedAt || seenTaskIds.has(task.id)) {
+			if (!task || task.archivedAt) {
 				return false
 			}
-
-			seenTaskIds.add(task.id)
 			return true
 		})
 		.map((instance) =>
 			toTaskOccurrence(instance.task, instance, instance.task.schedule ?? null),
 		)
+
+	return withVirtualRecurringOccurrences({
+		occurrences: upcomingOccurrences,
+		windowStart: addDays(startDate, 1),
+		windowEnd: endDate,
+		seedRecurringTasks: recurringTasks.flatMap((task) => {
+			if (!task.schedule) {
+				return []
+			}
+
+			const { schedule, ...taskWithCategory } = task
+			return [{ task: taskWithCategory, schedule }]
+		}),
+	})
 }
 
 /**
@@ -559,6 +703,43 @@ export async function getDue(date?: Date) {
 		.map((instance) =>
 			toTaskOccurrence(instance.task, instance, instance.task.schedule ?? null),
 		)
+}
+
+export async function getSevenDayAgenda(date?: Date) {
+	await syncRecurringInstances(date)
+
+	const startDate = todayStart(date)
+	const endDate = addDays(startDate, 6)
+	const agendaInstances = await db.query.taskInstances.findMany({
+		where: and(
+			lte(taskInstances.scheduledFor, endDate),
+			or(
+				gte(taskInstances.scheduledFor, startDate),
+				isNull(taskInstances.handledAt),
+			),
+		),
+		orderBy: [asc(taskInstances.scheduledFor), asc(taskInstances.id)],
+		with: {
+			task: {
+				with: {
+					category: true,
+					schedule: true,
+				},
+			},
+		},
+	})
+
+	const agendaOccurrences = agendaInstances
+		.filter((instance) => Boolean(instance.task) && !instance.task.archivedAt)
+		.map((instance) =>
+			toTaskOccurrence(instance.task, instance, instance.task.schedule ?? null),
+		)
+
+	return withVirtualRecurringOccurrences({
+		occurrences: agendaOccurrences,
+		windowStart: startDate,
+		windowEnd: endDate,
+	})
 }
 
 export async function getRecentlyHandled({
