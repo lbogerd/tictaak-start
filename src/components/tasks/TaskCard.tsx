@@ -60,8 +60,8 @@ export function TaskCard({
 			)}
 		>
 			{/* Ticket "punches" */}
-			<div className="-left-3 -translate-y-1/2 absolute top-1/2 z-10 h-6 w-6 rounded-full bg-orange-50" />
-			<div className="-right-3 -translate-y-1/2 absolute top-1/2 z-10 h-6 w-6 rounded-full bg-orange-50" />
+			<div className="absolute top-1/2 -left-3 z-10 h-6 w-6 -translate-y-1/2 rounded-full bg-orange-50" />
+			<div className="absolute top-1/2 -right-3 z-10 h-6 w-6 -translate-y-1/2 rounded-full bg-orange-50" />
 
 			{/* Perforated line - aligned with side punches */}
 			<div className="absolute top-1/2 h-0 w-full border-orange-100 border-t-2 border-dashed" />
@@ -162,13 +162,13 @@ export function TaskCard({
 				</div>
 
 				{onArchive && !isArchived && (
-					<div className="pt-2 flex justify-start">
+					<div className="flex justify-start pt-2">
 						<Button
 							type="button"
 							variant="ghost"
 							size="sm"
 							onClick={() => onArchive(occurrence)}
-							className="h-8 px-2 text-rose-500 hover:bg-rose-50 hover:text-rose-600 -ml-2"
+							className="-ml-2 h-8 px-2 text-rose-500 hover:bg-rose-50 hover:text-rose-600"
 						>
 							<Archive className="mr-2 h-4 w-4" /> Archive task
 						</Button>
@@ -223,11 +223,11 @@ function DetailRow({
 	const { className, ...rest } = props
 	return (
 		<div {...rest} className={cn("flex flex-col gap-1", className)}>
-			<span className="flex items-center gap-1.5 text-muted-foreground text-[10px] uppercase font-bold tracking-widest">
+			<span className="flex items-center gap-1.5 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">
 				{icon}
 				{label}
 			</span>
-			<span className="text-neutral-900 font-medium text-sm whitespace-nowrap">
+			<span className="whitespace-nowrap font-medium text-neutral-900 text-sm">
 				{value}
 			</span>
 		</div>

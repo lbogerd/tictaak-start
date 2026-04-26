@@ -100,7 +100,9 @@ function withVirtualRecurringOccurrences({
 			continue
 		}
 
-		const recurringDays = normalizeRecurringDays(occurrence.schedule.recursOnDays)
+		const recurringDays = normalizeRecurringDays(
+			occurrence.schedule.recursOnDays,
+		)
 		if (recurringDays.length === 0) {
 			continue
 		}

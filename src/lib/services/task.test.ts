@@ -302,9 +302,9 @@ describe("taskService", () => {
 				"2026-05-02",
 				"2026-05-03",
 			])
-			expect(upcomingOccurrences.every((occurrence) => !occurrence.instanceId)).toBe(
-				true,
-			)
+			expect(
+				upcomingOccurrences.every((occurrence) => !occurrence.instanceId),
+			).toBe(true)
 		})
 
 		it("should not duplicate virtual upcoming dates that already have real instances", async () => {
@@ -444,7 +444,9 @@ describe("taskService", () => {
 			])
 			expect(agendaOccurrences[0]?.instanceId).toBeTruthy()
 			expect(
-				agendaOccurrences.slice(1).every((occurrence) => !occurrence.instanceId),
+				agendaOccurrences
+					.slice(1)
+					.every((occurrence) => !occurrence.instanceId),
 			).toBe(true)
 		})
 
@@ -474,13 +476,10 @@ describe("taskService", () => {
 				agendaOccurrences.map((occurrence) =>
 					occurrence.scheduledFor?.toISOString(),
 				),
-			).toEqual([
-				"2026-04-27T00:00:00.000Z",
-				"2026-04-29T00:00:00.000Z",
-			])
-			expect(agendaOccurrences.every((occurrence) => occurrence.instanceId)).toBe(
-				true,
-			)
+			).toEqual(["2026-04-27T00:00:00.000Z", "2026-04-29T00:00:00.000Z"])
+			expect(
+				agendaOccurrences.every((occurrence) => occurrence.instanceId),
+			).toBe(true)
 		})
 
 		it("should exclude archived recurring tasks and avoid persisting virtual occurrences", async () => {
@@ -504,7 +503,9 @@ describe("taskService", () => {
 			const result = await getSevenDayAgenda(monday)
 
 			expect(
-				result.some((occurrence) => occurrence.taskId === "archived-agenda-task"),
+				result.some(
+					(occurrence) => occurrence.taskId === "archived-agenda-task",
+				),
 			).toBe(false)
 			expect(
 				result.filter(
