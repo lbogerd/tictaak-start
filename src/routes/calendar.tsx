@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
 import { addDays, format, isBefore, isSameDay } from "date-fns"
-import { CalendarDays, Clock4, RotateCcw, Tags } from "lucide-react"
+import { CalendarClock, RotateCcw } from "lucide-react"
 import { Badge } from "~/components/ui/Badge"
 import { authMiddleware } from "~/lib/auth/serverFns"
 import { cn } from "~/lib/client/cn"
@@ -82,56 +82,48 @@ function CalendarPage() {
 
 	return (
 		<div className="mx-auto max-w-4xl px-4 py-8 sm:py-12">
-			<section className="rounded-[2rem] border border-orange-100 bg-white/70 p-5 shadow-orange-900/5 shadow-xl sm:p-7">
-				<div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-					<div>
-						<div className="mb-2 inline-flex items-center gap-2 rounded-full bg-orange-100 px-3 py-1 font-semibold text-orange-700 text-xs uppercase tracking-[0.16em]">
-							<CalendarDays className="h-3.5 w-3.5" />
-							Calendar
-						</div>
-						<h2 className="font-black text-3xl text-neutral-950">
-							7-Day Agenda
-						</h2>
-						<p className="mt-1 text-neutral-500 text-sm">
-							{format(startDate, "MMM d")} - {format(endDate, "MMM d, yyyy")}
-						</p>
-					</div>
-					<span className="w-fit rounded-full bg-orange-100 px-3 py-1 font-medium text-orange-700 text-sm">
-						{totalOccurrences}{" "}
-						{totalOccurrences === 1 ? "occurrence" : "occurrences"}
+			<div className="mb-8 flex items-center justify-between border-orange-200/50 border-b pb-4">
+				<div className="flex items-baseline gap-3">
+					<h3 className="font-semibold text-xl">7-Day Agenda</h3>
+					<span className="text-neutral-500 text-sm">
+						{format(startDate, "MMM d")} – {format(endDate, "MMM d, yyyy")}
 					</span>
 				</div>
+				<span className="rounded-full bg-orange-100 px-3 py-1 font-medium text-orange-700 text-sm">
+					{totalOccurrences}{" "}
+					{totalOccurrences === 1 ? "occurrence" : "occurrences"}
+				</span>
+			</div>
 
-				<div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-7">
-					{days.map((day) => (
-						<div
-							key={day.date.toISOString()}
-							className={cn(
-								"rounded-2xl border bg-white px-3 py-3 shadow-sm",
-								day.occurrences.length > 0
-									? "border-orange-200"
-									: "border-orange-100/70 opacity-75",
-							)}
-						>
-							<p className="font-bold text-neutral-950 text-sm">
-								{format(day.date, "EEE")}
-							</p>
-							<p className="text-neutral-500 text-xs">
-								{format(day.date, "MMM d")}
-							</p>
-							<p className="mt-2 font-semibold text-orange-600 text-xs">
-								{day.occurrences.length}
-							</p>
-						</div>
-					))}
-				</div>
+			<div className="mb-10 grid grid-cols-4 gap-2 sm:grid-cols-7">
+				{days.map((day) => (
+					<div
+						key={day.date.toISOString()}
+						className={cn(
+							"rounded-2xl border px-3 py-3",
+							day.occurrences.length > 0
+								? "border-orange-200 bg-white shadow-orange-900/5 shadow-sm"
+								: "border-orange-100/70 bg-white/50 opacity-60",
+						)}
+					>
+						<p className="font-bold text-neutral-950 text-sm">
+							{format(day.date, "EEE")}
+						</p>
+						<p className="text-neutral-500 text-xs">
+							{format(day.date, "MMM d")}
+						</p>
+						<p className="mt-2 font-semibold text-orange-600 text-xs">
+							{day.occurrences.length}
+						</p>
+					</div>
+				))}
+			</div>
 
-				<div className="space-y-5">
-					{days.map((day) => (
-						<AgendaDaySection key={day.date.toISOString()} day={day} />
-					))}
-				</div>
-			</section>
+			<div className="space-y-10">
+				{days.map((day) => (
+					<AgendaDaySection key={day.date.toISOString()} day={day} />
+				))}
+			</div>
 		</div>
 	)
 }
@@ -139,20 +131,21 @@ function CalendarPage() {
 function AgendaDaySection({ day }: { day: AgendaDay }) {
 	return (
 		<div>
-			<div className="mb-3 flex items-center justify-between border-orange-200/60 border-b pb-3">
+			<div className="mb-4 flex items-center justify-between border-orange-200/50 border-b pb-4">
 				<div>
-					<h3 className="font-bold text-neutral-950 text-xl">{day.label}</h3>
+					<h3 className="font-semibold text-xl">{day.label}</h3>
 					<p className="text-neutral-500 text-xs">
 						{format(day.date, "EEEE, MMM d")}
 					</p>
 				</div>
-				<span className="rounded-full bg-orange-100 px-3 py-1 font-medium text-orange-700 text-xs">
-					{day.occurrences.length}
+				<span className="rounded-full bg-orange-100 px-3 py-1 font-medium text-orange-700 text-sm">
+					{day.occurrences.length}{" "}
+					{day.occurrences.length === 1 ? "occurrence" : "occurrences"}
 				</span>
 			</div>
 
 			{day.occurrences.length > 0 ? (
-				<ul className="space-y-3">
+				<ul className="grid gap-4 sm:grid-cols-1">
 					{day.occurrences.map((occurrence) => (
 						<li key={getOccurrenceKey(occurrence)}>
 							<AgendaOccurrenceCard occurrence={occurrence} />
@@ -171,89 +164,100 @@ function AgendaOccurrenceCard({ occurrence }: { occurrence: TaskOccurrence }) {
 	const isProjectedRecurrence = Boolean(
 		!occurrence.instanceId && occurrence.recurrenceSummary && !status.isHandled,
 	)
+	const statusText = status.isPrinted
+		? "Printed"
+		: status.isSkipped
+			? "Skipped"
+			: status.isDue
+				? "Due"
+				: "Scheduled"
 	const scheduledFor = occurrence.scheduledFor
-		? format(occurrence.scheduledFor, "EEE, MMM d")
-		: "Unscheduled"
+		? format(occurrence.scheduledFor, "EEEE, MMM d, yyyy")
+		: "No open occurrence"
 
 	return (
-		<div className="relative overflow-hidden rounded-3xl border border-orange-100 bg-white p-4 shadow-lg shadow-orange-900/5">
-			<div
-				className={cn(
-					"absolute inset-y-0 left-0 w-1.5",
-					status.isDue
-						? "bg-pink-500"
-						: status.isPrinted
-							? "bg-emerald-400"
-							: status.isSkipped
-								? "bg-amber-400"
-								: "bg-orange-300",
-				)}
-			/>
-			<div className="flex flex-col gap-4 pl-2 sm:flex-row sm:items-start sm:justify-between">
-				<div className="min-w-0">
-					<div className="mb-2 flex flex-wrap items-center gap-2">
-						<Badge
-							variant={status.isDue ? "default" : "outline"}
-							className={cn(
-								"border-orange-200 py-1",
-								status.isDue
-									? "bg-pink-500 text-white"
-									: "bg-orange-50 text-orange-700",
-							)}
-						>
-							{status.stateLabel}
-						</Badge>
-						{isProjectedRecurrence ? (
+		<div className="relative overflow-hidden rounded-3xl border-none bg-white shadow-orange-900/5 shadow-xl transition-all hover:shadow-2xl hover:shadow-orange-900/10">
+			{/* Ticket "punches" */}
+			<div className="absolute top-1/2 -left-3 z-10 h-6 w-6 -translate-y-1/2 rounded-full bg-orange-50" />
+			<div className="absolute top-1/2 -right-3 z-10 h-6 w-6 -translate-y-1/2 rounded-full bg-orange-50" />
+
+			{/* Perforated line - aligned with side punches */}
+			<div className="absolute top-1/2 h-0 w-full border-orange-100 border-t-2 border-dashed" />
+
+			<div className="px-6 pt-6 pb-8">
+				<div className="flex items-start justify-between gap-3">
+					<div className="space-y-1">
+						<p className="font-medium text-orange-600 text-xs uppercase tracking-[0.2em]">
+							{occurrence.categoryName}
+						</p>
+						<p className="font-black text-2xl text-neutral-950 sm:text-3xl">
+							{occurrence.title}
+						</p>
+					</div>
+					<div className="flex flex-wrap items-center gap-2 pt-1">
+						{isProjectedRecurrence && (
 							<Badge
 								variant="outline"
-								className="border-orange-200 bg-white py-1 text-orange-700"
+								className="border-orange-200 py-1 text-orange-700"
 							>
 								To be planned
 							</Badge>
-						) : null}
-						<span className="inline-flex items-center gap-1 text-neutral-500 text-xs">
-							<Tags className="h-3.5 w-3.5" />
-							{occurrence.categoryName}
-						</span>
+						)}
+						<Badge
+							variant={status.isDue ? "default" : "outline"}
+							className={cn(
+								"py-1",
+								status.isDue
+									? "border-transparent bg-pink-500 text-white"
+									: status.isPrinted
+										? "border-emerald-200 bg-emerald-50 text-emerald-700"
+										: status.isSkipped
+											? "border-amber-200 bg-amber-50 text-amber-700"
+											: "border-orange-200 bg-orange-50 text-orange-700",
+							)}
+						>
+							{statusText}
+						</Badge>
 					</div>
-					<p className="font-black text-2xl text-neutral-950">
-						{occurrence.title}
-					</p>
 				</div>
+			</div>
 
-				<div className="grid gap-2 text-sm sm:min-w-52">
-					<AgendaMeta
-						icon={<Clock4 className="h-3.5 w-3.5" />}
-						label="Scheduled"
+			<div className="px-6 pb-6">
+				<div className="flex flex-wrap gap-x-12 gap-y-4">
+					<DetailRow
+						label="Scheduled for"
+						icon={<CalendarClock className="h-3.5 w-3.5" />}
 						value={scheduledFor}
 					/>
-					<AgendaMeta
-						icon={<RotateCcw className="h-3.5 w-3.5" />}
-						label="Repeats"
-						value={occurrence.recurrenceSummary ?? "One time"}
-					/>
+					{occurrence.recurrenceSummary && (
+						<DetailRow
+							label="Repeats"
+							icon={<RotateCcw className="h-3.5 w-3.5" />}
+							value={occurrence.recurrenceSummary}
+						/>
+					)}
 				</div>
 			</div>
 		</div>
 	)
 }
 
-function AgendaMeta({
-	icon,
+function DetailRow({
 	label,
+	icon,
 	value,
 }: {
-	icon: React.ReactNode
 	label: string
+	icon: React.ReactNode
 	value: string
 }) {
 	return (
-		<div className="flex items-center justify-between gap-3 rounded-2xl bg-orange-50/70 px-3 py-2">
-			<span className="inline-flex items-center gap-1.5 font-bold text-[10px] text-neutral-500 uppercase tracking-widest">
+		<div className="flex flex-col gap-0.5">
+			<span className="inline-flex items-center gap-1.5 font-bold text-[10px] text-neutral-400 uppercase tracking-widest">
 				{icon}
 				{label}
 			</span>
-			<span className="font-medium text-neutral-900 text-xs">{value}</span>
+			<span className="font-medium text-neutral-900 text-sm">{value}</span>
 		</div>
 	)
 }
