@@ -32,9 +32,6 @@ export function TaskCard({
 }: TaskCardProps) {
 	const isArchived = Boolean(occurrence.archivedAt)
 	const status = getTaskOccurrenceStatus(occurrence)
-	const isProjectedRecurrence = Boolean(
-		!occurrence.instanceId && occurrence.recurrenceSummary && !status.isHandled,
-	)
 	const headlineLabel = occurrence.categoryName || "Task"
 	const headlineValue = occurrence.title
 	const detailDate = occurrence.scheduledFor
@@ -77,13 +74,6 @@ export function TaskCard({
 						</p>
 					</div>
 					<div className="flex items-center gap-2">
-						{isProjectedRecurrence && (
-							<StatusBadge
-								variant="outline"
-								text="To be planned"
-								className="border-orange-200 text-orange-700"
-							/>
-						)}
 						{statusText !== "Scheduled" && statusText !== "Occurrence" && (
 							<StatusBadge
 								variant={status.isDue ? "default" : "secondary"}

@@ -161,9 +161,6 @@ function AgendaDaySection({ day }: { day: AgendaDay }) {
 
 function AgendaOccurrenceCard({ occurrence }: { occurrence: TaskOccurrence }) {
 	const status = getTaskOccurrenceStatus(occurrence)
-	const isProjectedRecurrence = Boolean(
-		!occurrence.instanceId && occurrence.recurrenceSummary && !status.isHandled,
-	)
 	const statusText = status.isPrinted
 		? "Printed"
 		: status.isSkipped
@@ -195,14 +192,6 @@ function AgendaOccurrenceCard({ occurrence }: { occurrence: TaskOccurrence }) {
 						</p>
 					</div>
 					<div className="flex flex-wrap items-center gap-2 pt-1">
-						{isProjectedRecurrence && (
-							<Badge
-								variant="outline"
-								className="border-orange-200 py-1 text-orange-700"
-							>
-								To be planned
-							</Badge>
-						)}
 						<Badge
 							variant={status.isDue ? "default" : "outline"}
 							className={cn(
